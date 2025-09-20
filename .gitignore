@@ -1,0 +1,28 @@
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# PHP/composer
+vendor/
+composer.lock
+
+# Env & kredensial umum
+.env
+.env.*
+
+# Admin backend: JANGAN commit kredensial & artefak
+adminweb/.env
+adminweb/.env.*
+adminweb/config.php
+adminweb/config/*.php
+adminweb/storage/*
+!adminweb/storage/.gitkeep
+adminweb/cache/*
+!adminweb/cache/.gitkeep
+adminweb/uploads/*
+!adminweb/uploads/.gitkeep
+adminweb/vendor/
+config/koneksi.php
+config/*.local.php
