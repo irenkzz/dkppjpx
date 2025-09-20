@@ -5,10 +5,11 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+  require_once __DIR__ . '/../../includes/bootstrap.php'; // path relatif dari modul
   $aksi = "modul/mod_halamanstatis/aksi_halamanstatis.php";
 
   // mengatasi variabel yang belum di definisikan (notice undefined index)
-  $act = isset($_GET['act']) ? $_GET['act'] : '';  
+  $act  = $_GET['act'] ?? '';  
 ?>
 	<section class="content-header">
 		<h1>Halaman Statis</h1>
@@ -40,20 +41,36 @@ else{
                     </thead>
                     <tbody>
 					<?php
-					$query  = "SELECT * FROM halamanstatis ORDER BY id_halaman DESC";
-					$tampil = querydb($query);
-					$no=1;
-					while ($r = $tampil->fetch_array(MYSQLI_ASSOC)) {
-						$tgl_posting = isset($r['tgl_posting']) && $r['tgl_posting'] !== null ? tgl_indo($r['tgl_posting']) : '';
-						echo "<tr><td>$no</td>
-							<td>$r[judul]</td>
-							<td>statis-$r[id_halaman]-$r[judul_seo].html</td>
-							<td>$tgl_posting</td>
-							<td align=\"center\"><a href=\"?module=halamanstatis&act=edithalamanstatis&id=$r[id_halaman]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp; 
-							<a href=\"$aksi?module=halamanstatis&act=hapus&id=$r[id_halaman]\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS HALAMAN INI ?')\" title=\"Hapus Data\"><i class=\"fa fa-trash text-red\"></i></a></td>
-							</tr>";
-						$no++;
-					}
+					$query  = "SELECT id_halaman, judul, judul_seo, DATE(tgl_posting) AS tanggal_fix
+           FROM halamanstatis
+           ORDER BY id_halaman DESC";
+$tampil = querydb($query);
+$no = 1;
+while ($r = $tampil->fetch_assoc()) {
+    $tgl_posting = !empty($r['tanggal_fix']) ? tgl_indo($r['tanggal_fix']) : '';
+    $id   = (int)$r['id_halaman'];
+    $jdl  = e($r['judul'] ?? '');
+    $jseo = e($r['judul_seo'] ?? '');
+
+    echo "<tr>
+        <td>{$no}</td>
+        <td>{$jdl}</td>
+        <td>statis-{$id}-{$jseo}.html</td>
+        <td>{$tgl_posting}</td>
+        <td align=\"center\">
+          <a href=\"?module=halamanstatis&act=edithalamanstatis&id={$id}\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a>
+          &nbsp;
+          <form action=\"{$aksi}?module=halamanstatis&act=hapus\" method=\"post\" style=\"display:inline\" onsubmit=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS HALAMAN INI ?')\">
+            <input type=\"hidden\" name=\"id\" value=\"{$id}\">";
+            csrf_field();
+    echo "  <button type=\"submit\" title=\"Hapus Data\" style=\"border:none;background:none;padding:0;cursor:pointer\">
+              <i class=\"fa fa-trash text-red\"></i>
+            </button>
+          </form>
+        </td>
+      </tr>";
+    $no++;
+}
 					?>
                     </tbody>
                   </table>
@@ -72,6 +89,7 @@ else{
                   <h3 class="box-title">Tambah Halaman Statis</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=halamanstatis&act=input" class="form-horizontal" enctype="multipart/form-data">
+					<?php csrf_field(); ?>
 					<div class="box-body">
 						<div class="form-group">
 							<label for="judul" class="col-sm-2 control-label">Judul</label>
@@ -112,18 +130,19 @@ else{
                   <h3 class="box-title">Edit Halaman Statis</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=halamanstatis&act=update" class="form-horizontal" enctype="multipart/form-data">
-					<input type="hidden" name="id" value="<?php echo $r['id_halaman']; ?>" />
+				<?php csrf_field(); ?>	
+				<input type="hidden" name="id" value="<?php echo $r['id_halaman']; ?>" />
 					<div class="box-body">
 						<div class="form-group">
 							<label for="judul" class="col-sm-2 control-label">Judul</label>
 							<div class="col-sm-10">
-								<input type="text" class="form-control" id="judul" name="judul" value="<?php echo $r['judul']; ?>" />
+								<input type="text" class="form-control" id="judul" name="judul" value="<?php echo e($r['judul'] ?? ''); ?>" />
 							</div>
 						</div>
 						<div class="form-group">
 							<label for="isi_halaman" class="col-sm-2 control-label">Isi Halaman</label>
 							<div class="col-sm-10">
-								<textarea class="form-control" id="isi_halamanstatis" name="isi_halaman"><?php echo $r['isi_halaman']; ?></textarea>
+								<textarea class="form-control" id="isi_halamanstatis" name="isi_halaman"><?php echo e($r['isi_halaman'] ?? ''); ?></textarea>
 							</div>
 						</div>
 						<div class="form-group">
@@ -131,7 +150,7 @@ else{
 							<div class="col-sm-10">
 								<?php
 								if ($r['gambar']!=''){
-									echo "<img src=\"../foto_banner/$r[gambar]\">";  
+									echo '<img src="../foto_banner/' . e($r['gambar']) . '">';  
 								}
 								else{
 									echo "Tidak ada gambar";

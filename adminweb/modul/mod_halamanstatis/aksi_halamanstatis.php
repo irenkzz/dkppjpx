@@ -1,40 +1,62 @@
 <?php
-session_start();
+require_once __DIR__ . '/../../includes/bootstrap.php';
+
 // Apabila user belum login
 if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 	echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location = '../../index.php'</script>";
+  exit;
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-  include "../../../config/koneksi.php";
   include "../../../config/library.php";
   include "../../../config/fungsi_seo.php";
   include "../../../config/fungsi_thumb.php";
   opendb();
 
-  $module = $_GET['module'];
-  $act    = $_GET['act'];
+  $module = $_GET['module'] ?? '';
+  $act    = $_GET['act'] ?? '';
+
+  //Wajibkan CSRF untuk semua POST
+  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_check();
+  }
+
+  // Ambil id sekali (POST untuk aksi mutasi)
+  $id = isset($_POST['id']) ? (int)$_POST['id'] : (int)($_GET['id'] ?? 0);
 
   // Hapus halaman statis
   if ($module=='halamanstatis' AND $act=='hapus'){
-    $query = "SELECT gambar FROM halamanstatis WHERE id_halaman='$_GET[id]'";
-    $hapus = querydb($query);
-    $r     = $hapus->fetch_array();
     
-    if ($r['gambar']!=''){
-      $namafile = $r['gambar'];
-      
-      // hapus filenya
-      unlink("../../../foto_banner/$namafile");   
-      unlink("../../../foto_banner/small_$namafile");   
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if ($id <= 0) {
+      header("location:../../media.php?module=".$module);
+    exit;
+    }
 
-      // hapus data banner di database 
-      querydb("DELETE FROM halamanstatis WHERE id_halaman='$_GET[id]'");      
+    // 1) Ambil nama file gambar (prepared)
+    $stmt = $koneksi->prepare("SELECT gambar FROM halamanstatis WHERE id_halaman = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->bind_result($gambar);
+    $stmt->fetch();
+    $stmt->close();
+
+    // 2) Hapus file fisik (aman)
+    if (!empty($gambar)) {
+      $base = basename($gambar); // cegah path traversal
+      @unlink("../../../foto_banner/$base");
+      @unlink("../../../foto_banner/small_$base");
     }
-    else{
-      querydb("DELETE FROM halamanstatis WHERE id_halaman='$_GET[id]'");      
-    }
+
+    // 3) Hapus row di DB (prepared)
+    $stmt = $koneksi->prepare("DELETE FROM halamanstatis WHERE id_halaman = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->close();
+
     header("location:../../media.php?module=".$module);
+
+    exit;
   }
 
   // Input halaman statis
@@ -51,17 +73,12 @@ else{
 
     // Apabila tidak ada gambar yang di upload
     if (empty($lokasi_file)){
-      $input = "INSERT INTO halamanstatis(judul, 
-                                          judul_seo,
-                                          tgl_posting,  
-                                          isi_halaman) 
-                                  VALUES('$judul', 
-                                          '$judul_seo',
-                                          '$tgl_sekarang',  
-                                          '$isi_halaman')";
-      querydb($input);
-
+      $stmt = $koneksi->prepare("INSERT INTO halamanstatis (judul, judul_seo, tgl_posting, isi_halaman) VALUES (?, ?, ?, ?)");
+      $stmt->bind_param("ssss", $judul, $judul_seo, $tgl_sekarang, $isi_halaman);
+      $stmt->execute();
+      $stmt->close();
       header("location:../../media.php?module=".$module);
+      exit;
     }
     // Apabila ada gambar yang di upload
     else{
@@ -73,19 +90,16 @@ else{
         //$folder = "../../../foto_banner/"; // folder untuk gambar halaman statis
         //$ukuran = 200;                     // gambar diperkecil jadi 200px (thumb)
         //UploadFoto($nama_gambar, $folder, $ukuran);
-		    UploadBanner($nama_gambar);
-        
-        $input = "INSERT INTO halamanstatis(judul, 
-                                            judul_seo, 
-                                            isi_halaman,
-                                            tgl_posting, 
-                                            gambar) 
-                                    VALUES('$judul', 
-                                           '$judul_seo', 
-                                           '$isi_halaman',
-                                           '$tgl_sekarang',                                           
-                                           '$nama_gambar')";
-        querydb($input);
+		    
+        UploadBanner($nama_gambar);
+        // Prepared INSERT + gambar
+        $stmt = $koneksi->prepare("
+          INSERT INTO halamanstatis (judul, judul_seo, tgl_posting, isi_halaman, gambar)
+          VALUES (?, ?, ?, ?, ?)
+        ");
+        $stmt->bind_param("sssss", $judul, $judul_seo, $tgl_skrg, $isi_halaman, $nama_gambar);
+        $stmt->execute();
+        $stmt->close();
 
         header("location:../../media.php?module=".$module);
       }
@@ -108,11 +122,16 @@ else{
 
     // Apabila gambar tidak diganti
     if (empty($lokasi_file)){
-      $update = "UPDATE halamanstatis SET judul       = '$judul',
-                                          judul_seo   = '$judul_seo', 
-                                          isi_halaman = '$isi_halaman'
-                                    WHERE id_halaman  = '$id'";
-      querydb($update);
+      // Prepared UPDATE tanpa mengubah gambar
+      $stmt = $koneksi->prepare("
+        UPDATE halamanstatis
+        SET judul = ?, judul_seo = ?, isi_halaman = ?
+        WHERE id_halaman = ?
+      ");
+      $id_i = (int)$id;
+      $stmt->bind_param("sssi", $judul, $judul_seo, $isi_halaman, $id_i);
+      $stmt->execute();
+      $stmt->close();
       
       header("location:../../media.php?module=".$module);
     }
