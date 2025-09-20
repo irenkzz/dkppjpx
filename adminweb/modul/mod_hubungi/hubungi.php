@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../../includes/bootstrap.php';
+
 // Apabila user belum login
 if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 	echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location = '../../index.php'</script>";
@@ -41,20 +43,31 @@ else{
                     </thead>
                     <tbody>
 					<?php
-					$query  = "SELECT * FROM hubungi ORDER BY id_hubungi DESC";
-					$tampil = querydb($query);
-					$no=1;
-					while ($r=$tampil->fetch_array()){  
-						$tanggal=tgl_indo($r['tanggal']);
-						echo "<tr><td class=\"text-center\">$no</td>
-								<td>$r[nama_pengirim]</td>
-								<td><a href=\"?module=hubungi&act=balasemail&id=$r[id_hubungi]\">$r[email]</a></td>
-								<td>$r[subjek]</td>
-								<td class=\"text-center\">$tanggal</td>
-								<td class=\"text-center\"><a href=\"$aksi?module=hubungi&act=hapus&id=$r[id_hubungi]\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS DATA INI ?')\"><i class=\"fa fa-trash text-red\"></i></a></td>
-								</tr>";
-						$no++;
-					}
+						$query  = "SELECT * FROM hubungi ORDER BY id_hubungi DESC";
+						$tampil = querydb($query);
+						$no = 1;
+						while ($r = $tampil->fetch_array()) {
+							$tanggal = tgl_indo($r['tanggal']);
+							$id      = (int)$r['id_hubungi'];
+							echo '<tr>';
+							echo '  <td class="text-center">' . $no . '</td>';
+							echo '  <td>' . e($r['nama_pengirim']) . '</td>';
+							echo '  <td><a href="?module=hubungi&act=balasemail&id=' . urlencode((string)$id) . '">' . e($r['email']) . '</a></td>';
+							echo '  <td>' . e($r['subjek']) . '</td>';
+							echo '  <td class="text-center">' . e($tanggal) . '</td>';
+							echo '  <td class="text-center">';
+							// DELETE action: POST + CSRF (replaces old GET link)
+							echo '    <form method="POST" action="' . $aksi . '?module=hubungi&act=hapus" style="display:inline" onsubmit="return confirm(\'APAKAH ANDA YAKIN AKAN MENGHAPUS DATA INI ?\')">';
+							csrf_field();
+							echo '      <input type="hidden" name="id" value="' . $id . '">';
+							echo '      <button type="submit" class="btn btn-link" title="Hapus" style="padding:0;border:none;background:transparent">';
+							echo '        <i class="fa fa-trash text-red"></i>';
+							echo '      </button>';
+							echo '    </form>';
+							echo '  </td>';
+							echo '</tr>';
+							$no++;
+						}
 					?>
                     </tbody>
                   </table>
@@ -77,20 +90,20 @@ else{
 					<div class="form-group">
 						<label for="email" class="col-sm-2 control-label">Kepada</label>
 						<div class="col-sm-10">
-							<input type="text" class="form-control" id="email" name="email" value="<?php echo $r['email']; ?>" />
+							<input type="text" class="form-control" id="email" name="email" value="<?php echo e($r['email']); ?>" />
 						</div>
 					</div>
 					<div class="form-group">
 						<label for="subjek" class="col-sm-2 control-label">Subjek</label>
 						<div class="col-sm-10">
-							<input type="text" class="form-control" id="subjek" name="subjek" value="Re: <?php echo $r['subjek']; ?>" />
+							<input type="text" class="form-control" id="subjek" name="subjek" value="Re: <?php echo e($r['subjek']); ?>" />
 						</div>
 					</div>
 					<div class="form-group">
 						<label for="pesan" class="col-sm-2 control-label">Pesan</label>
 						<div class="col-sm-10">
 							<textarea class="form-control" id="isi_hubungi" name="pesan"><br><br>    
-          -----------------------------------------------------------------------------------------------------------------------------------------------<br><?php echo $r['pesan']; ?></textarea>
+          -----------------------------------------------------------------------------------------------------------------------------------------------<br><?php echo e($r['pesan']); ?></textarea>
 						</div>
 					</div>
 				</div><!-- /.box-body -->

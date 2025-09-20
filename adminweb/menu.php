@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/includes/bootstrap.php';
+
 // Apabila user belum login
 if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 	echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location = 'index.php'</script>"; 
@@ -17,8 +19,8 @@ else{
 				<img src="dist/img/user.png" class="img-responsive">
 			</div>
 			<div class="pull-left info">
-			  <p><?php echo $_SESSION['namalengkap']; ?></p>
-			  <a href="#"><i class="fa fa-circle text-success"></i> Online</a>
+  			<p><?php echo e($_SESSION['namalengkap'] ?? ''); ?></p>
+  			<a href="#"><i class="fa fa-circle text-success"></i> Online</a>
 			</div>
 		  </div>
 		<!-- sidebar menu: : style can be found in sidebar.less -->
