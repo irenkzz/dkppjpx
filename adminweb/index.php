@@ -22,7 +22,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
   </head>
   <body class="hold-transition login-page">
     <div class="login-box">
-      <div class="login-logo"><img src="lotim.png" width="30%"></img><br>Login<br /><b>Administrator </b>
+      <div class="login-logo"><img src="jayapura.jpg" width="30%"></img><br>Login<br /><b>Administrator </b>
       </div><!-- /.login-logo -->
       <div class="login-box-body">
         <form action="cek_login.php" method="post">
@@ -42,7 +42,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
         </form>
       </div><!-- /.login-box-body -->
 	  <p>&nbsp;</p>
-	  <p class="text-center"><small>Copyright &copy; 2017 Kabupaten Lombok Timur</a>. All rights reserved.</p>
+	  <p class="text-center"><small>Copyright &copy; 2025 DKPP Kota Jayapura</a>. All rights reserved.</p>
     </div><!-- /.login-box -->
 
     <!-- jQuery 2.1.4 -->

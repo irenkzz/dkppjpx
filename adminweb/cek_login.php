@@ -1,4 +1,4 @@
-<?php
+s<?php
 include "../config/koneksi.php";
 opendb();
 // fungsi untuk menghindari injeksi dari user yang jahil

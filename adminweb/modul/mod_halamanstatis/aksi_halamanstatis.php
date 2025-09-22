@@ -8,6 +8,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+  require_once __DIR__ . '/../../includes/upload_helpers.php';
   include "../../../config/library.php";
   include "../../../config/fungsi_seo.php";
   include "../../../config/fungsi_thumb.php";
@@ -34,7 +35,7 @@ else{
     }
 
     // 1) Ambil nama file gambar (prepared)
-    $stmt = $koneksi->prepare("SELECT gambar FROM halamanstatis WHERE id_halaman = ?");
+    $stmt = $dbconnection->prepare("SELECT gambar FROM halamanstatis WHERE id_halaman = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $stmt->bind_result($gambar);
@@ -49,7 +50,7 @@ else{
     }
 
     // 3) Hapus row di DB (prepared)
-    $stmt = $koneksi->prepare("DELETE FROM halamanstatis WHERE id_halaman = ?");
+    $stmt = $dbconnection->prepare("DELETE FROM halamanstatis WHERE id_halaman = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $stmt->close();
@@ -73,7 +74,7 @@ else{
 
     // Apabila tidak ada gambar yang di upload
     if (empty($lokasi_file)){
-      $stmt = $koneksi->prepare("INSERT INTO halamanstatis (judul, judul_seo, tgl_posting, isi_halaman) VALUES (?, ?, ?, ?)");
+      $stmt = $dbconnection->prepare("INSERT INTO halamanstatis (judul, judul_seo, tgl_posting, isi_halaman) VALUES (?, ?, ?, ?)");
       $stmt->bind_param("ssss", $judul, $judul_seo, $tgl_sekarang, $isi_halaman);
       $stmt->execute();
       $stmt->close();
@@ -82,6 +83,7 @@ else{
     }
     // Apabila ada gambar yang di upload
     else{
+     /*
       if ($tipe_file != "image/jpeg" AND $tipe_file != "image/pjpeg"){
         echo "<script>window.alert('Upload Gagal! Pastikan file yang di upload bertipe *.JPG');
               window.location=('../../media.php?module=halamanstatis')</script>";
@@ -92,20 +94,34 @@ else{
         //UploadFoto($nama_gambar, $folder, $ukuran);
 		    
         UploadBanner($nama_gambar);
+        */
+      try {
+          $res = upload_image_secure($_FILES['fupload'], [
+              'dest_dir'     => __DIR__ . '/../../../foto_banner', // keep your existing dir
+              'thumb_max_w'  => 480,
+              'thumb_max_h'  => 320,
+              'jpeg_quality' => 85,
+              'prefix'       => 'banner_',
+              // 'preserve_alpha' => false, // uncomment to always convert to JPEG
+          ]);
+          $nama_gambar = $res['filename'];
+      } catch (Throwable $e) {
+          echo "<script>window.alert('Upload gagal: " . e($e->getMessage()) . "'); location=history.back();</script>";
+          exit;
+      }
         // Prepared INSERT + gambar
-        $stmt = $koneksi->prepare("
+        $stmt = $dbconnection->prepare("
           INSERT INTO halamanstatis (judul, judul_seo, tgl_posting, isi_halaman, gambar)
           VALUES (?, ?, ?, ?, ?)
         ");
-        $stmt->bind_param("sssss", $judul, $judul_seo, $tgl_skrg, $isi_halaman, $nama_gambar);
+        $stmt->bind_param("sssss", $judul, $judul_seo, $tgl_sekarang, $isi_halaman, $nama_gambar);
         $stmt->execute();
         $stmt->close();
 
         header("location:../../media.php?module=".$module);
       }
     }
-  }
-
+  
 
   // Update halaman statis
   elseif ($module=='halamanstatis' AND $act=='update'){
@@ -123,7 +139,7 @@ else{
     // Apabila gambar tidak diganti
     if (empty($lokasi_file)){
       // Prepared UPDATE tanpa mengubah gambar
-      $stmt = $koneksi->prepare("
+      $stmt = $dbconnection->prepare("
         UPDATE halamanstatis
         SET judul = ?, judul_seo = ?, isi_halaman = ?
         WHERE id_halaman = ?
@@ -136,15 +152,19 @@ else{
       header("location:../../media.php?module=".$module);
     }
     else{
-      if ($tipe_file != "image/jpeg" AND $tipe_file != "image/pjpeg"){
-        echo "<script>window.alert('Upload Gagal! Pastikan file yang di upload bertipe *.JPG');
-              window.location=('../../media.php?module=halamanstatis')</script>";
+      try {
+          $res = upload_image_secure($_FILES['fupload'], [
+              'dest_dir'     => __DIR__ . '/../../../foto_banner',
+              'thumb_max_w'  => 480,
+              'thumb_max_h'  => 320,
+              'jpeg_quality' => 85,
+              'prefix'       => 'banner_',
+          ]);
+          $nama_gambar = $res['filename'];
+      } catch (Throwable $e) {
+          echo "<script>window.alert('Upload gagal: " . e($e->getMessage()) . "'); location=history.back();</script>";
+          exit;
       }
-      else{
-        //$folder = "../../../foto_banner/"; // folder untuk gambar halaman statis
-        //$ukuran = 200;                    // gambar diperkecil jadi 200px (thumb)
-        //UploadFoto($nama_gambar, $folder, $ukuran);
-		UploadBanner($nama_gambar);
 
         $update = "UPDATE halamanstatis SET judul       = '$judul',
                                             judul_seo   = '$judul_seo', 
@@ -154,7 +174,7 @@ else{
         querydb($update);
       
         header("location:../../media.php?module=".$module);
-      }
+     
     }
   }
   closedb();

@@ -6,7 +6,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-  include "../../../config/koneksi.php";
+  require_once __DIR__ . '/../../includes/bootstrap.php';
   include "../../../config/library.php";
   opendb();
 
@@ -14,101 +14,142 @@ else{
   $act    = $_GET['act'];
 
   // Hapus download
-  if ($module=='download' AND $act=='hapus'){
-    $query = "SELECT nama_file FROM download WHERE id_download='$_GET[id]'";
-    $hapus = querydb($query);
-    $r     = $hapus->fetch_array();
-    
-    if ($r['nama_file']!=''){
-      $namafile = $r['nama_file'];
-      
-      // hapus filenya
-      unlink("../../../files/$namafile");   
-      unlink("../../../files/small_$namafile");   
+  if ($module === 'download' && $act === 'hapus') {
+    require_post_csrf(); // enforce POST + CSRF
 
-      // hapus data download di database 
-      querydb("DELETE FROM download WHERE id_download='$_GET[id]'");      
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if ($id <= 0) {
+        header("Location: ../../media.php?module=" . $module);
+        exit;
     }
-    else{
-      querydb("DELETE FROM download WHERE id_download='$_GET[id]'");      
+
+     // fetch filename securely
+    $stmt = $dbconnection->prepare("SELECT nama_file FROM download WHERE id_download = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $r = $result->fetch_assoc();
+    $stmt->close();
+
+    if ($r && !empty($r['nama_file'])) {
+        $namafile = basename($r['nama_file']); // prevent path traversal
+        @unlink("../../../files/$namafile");
+        @unlink("../../../files/small_$namafile");
     }
-    header("location:../../media.php?module=".$module);
+
+    // delete row securely
+    $stmt = $dbconnection->prepare("DELETE FROM download WHERE id_download = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: ../../media.php?module=" . $module);
+    exit;
   }
 
   // Input download
-  elseif ($module=='download' AND $act=='input'){
-    $ekstensi =  array('jpg','jpeg','png','doc','docx','pdf');
-    $lokasi_file    = $_FILES['fupload']['tmp_name'];
-    $nama_file      = $_FILES['fupload']['name'];    
-    $acak           = rand(1,99);
-    $nama_file_unik = $acak.$nama_file; 
-    $ext = pathinfo($nama_file, PATHINFO_EXTENSION);
+  elseif ($module === 'download' && $act === 'input') {
+    require_post_csrf();
 
-    $judul = $_POST['judul'];
+    $allowed_ext = ['jpg','jpeg','png','doc','docx','pdf'];
+    $lokasi_file = $_FILES['fupload']['tmp_name'] ?? '';
+    $nama_file   = $_FILES['fupload']['name'] ?? '';
+    $ext         = strtolower(pathinfo($nama_file, PATHINFO_EXTENSION));
+    $judul       = $_POST['judul'] ?? '';
+
+    // no file uploaded
+    if (empty($lokasi_file)) {
+        $stmt = $dbconnection->prepare("INSERT INTO download (judul, tgl_posting) VALUES (?, ?)");
+        $stmt->bind_param("ss", $judul, $tgl_sekarang);
+        $stmt->execute();
+        $stmt->close();
+        header("Location: ../../media.php?module=".$module);
+        exit;
+    }
     
-    // Apabila tidak ada file yang diupload
-    if (empty($lokasi_file)){
-      $input = "INSERT INTO download(judul, tgl_posting) VALUES('$judul', '$tgl_sekarang')";
-      querydb($input);
-
-      header("location:../../media.php?module=".$module);
+		// with file
+    if (!in_array($ext, $allowed_ext, true)) {
+        echo "<script>window.alert('Upload Gagal! Pastikan file bertipe yang diizinkan'); location=history.back();</script>";
+        exit;
     }
-    else{
-		if(!in_array($ext,$ekstensi) ) {
-        echo "<script>window.alert('Upload Gagal! Pastikan file yang di upload bertipe yang tidak aneh');
-              location=history.back();</script>";
-		}else{
-		  // folder untuk menyimpan file yang di upload
-		  $folder = "../../../files/";
-		  $file_upload = $folder . $nama_file_unik;
-		  // upload file
-		  move_uploaded_file($_FILES["fupload"]["tmp_name"], $file_upload);
-		
-		  $input = "INSERT INTO download(judul, nama_file, tgl_posting) VALUES('$judul', '$nama_file_unik', '$tgl_sekarang')";
-		  querydb($input);
 
-		  header("location:../../media.php?module=".$module);
-		}
+    $acak = random_int(1, 99);
+    $nama_file_unik = $acak . $nama_file;
+
+    $folder = "../../../files/";
+    $file_upload = $folder . $nama_file_unik;
+    if (!move_uploaded_file($lokasi_file, $file_upload)) {
+        echo "<script>window.alert('Upload gagal disimpan'); location=history.back();</script>";
+        exit;
     }
-  }
 
+    $stmt = $dbconnection->prepare("INSERT INTO download (judul, nama_file, tgl_posting) VALUES (?, ?, ?)");
+    $stmt->bind_param("sss", $judul, $nama_file_unik, $tgl_sekarang);
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: ../../media.php?module=".$module);
+    exit;
+    }
+  
   // Update donwload
-  elseif ($module=='download' AND $act=='update'){
-    $ekstensi =  array('jpg','jpeg','png','doc','docx','pdf');
-    $lokasi_file    = $_FILES['fupload']['tmp_name'];
-    $nama_file      = $_FILES['fupload']['name'];
-    $acak           = rand(1,99);
-    $nama_file_unik = $acak.$nama_file; 
-	$ext = pathinfo($nama_file, PATHINFO_EXTENSION);
+  elseif ($module === 'download' && $act === 'update') {
+    require_post_csrf();
 
-    $id    = $_POST['id'];
-    $judul = $_POST['judul'];
+    $allowed_ext = ['jpg','jpeg','png','doc','docx','pdf'];
+    $lokasi_file = $_FILES['fupload']['tmp_name'] ?? '';
+    $nama_file   = $_FILES['fupload']['name'] ?? '';
+    $ext         = strtolower(pathinfo($nama_file, PATHINFO_EXTENSION));
 
-    // Apabila file tidak diganti
-    if (empty($lokasi_file)){
-      $update = "UPDATE download SET judul='$judul' WHERE id_download='$id'";
-      querydb($update);
-      
-      header("location:../../media.php?module=".$module);
+    $id          = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    $judul       = $_POST['judul'] ?? '';
+    $old_file    = $_POST['fupload_hapus'] ?? '';
+
+    if ($id <= 0) {
+        header("Location: ../../media.php?module=".$module);
+        exit;
     }
-    else{
-		if(!in_array($ext,$ekstensi) ) {
-        echo "<script>window.alert('Upload Gagal! Pastikan file yang di upload bertipe yang tidak aneh');
-              location=history.back();</script>";
-		}else{
-		  // folder untuk menyimpan file yang di upload
-		  $folder = "../../../files/";
-		  $file_upload = $folder . $nama_file_unik;
-		  // upload file
-		  move_uploaded_file($_FILES["fupload"]["tmp_name"], $file_upload);
-		  unlink("../../../files/$_POST[fupload_hapus]");
-		  $update = "UPDATE download SET judul='$judul', nama_file='$nama_file_unik' WHERE id_download='$id'";
-		  querydb($update);
-		  
-		  header("location:../../media.php?module=".$module);
-		}
+    
+		// no new file: update title only
+    if (empty($lokasi_file)) {
+        $stmt = $dbconnection->prepare("UPDATE download SET judul = ? WHERE id_download = ?");
+        $stmt->bind_param("si", $judul, $id);
+        $stmt->execute();
+        $stmt->close();
+        header("Location: ../../media.php?module=".$module);
+        exit;
     }
+
+    // with new file
+    if (!in_array($ext, $allowed_ext, true)) {
+        echo "<script>window.alert('Upload Gagal! Pastikan file bertipe yang diizinkan'); location=history.back();</script>";
+        exit;
+    }
+
+    $acak = random_int(1, 99);
+    $nama_file_unik = $acak . $nama_file;
+
+    $folder = "../../../files/";
+    $file_upload = $folder . $nama_file_unik;
+    if (!move_uploaded_file($lokasi_file, $file_upload)) {
+        echo "<script>window.alert('Upload gagal disimpan'); location=history.back();</script>";
+        exit;
+    }
+
+    // remove old file if provided
+    if (!empty($old_file)) {
+        @unlink("../../../files/$old_file");
+    }
+
+    $stmt = $dbconnection->prepare("UPDATE download SET judul = ?, nama_file = ? WHERE id_download = ?");
+    $stmt->bind_param("ssi", $judul, $nama_file_unik, $id);
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: ../../media.php?module=".$module);
+    exit;
   }
+ 
   closedb();
 }
 ?>
