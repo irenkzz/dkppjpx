@@ -1,12 +1,12 @@
 <?php
-session_start();
+require_once __DIR__ . '/../../includes/bootstrap.php';
 // Apabila user belum login
 if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 	echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location = '../../index.php'</script>";
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-  require_once __DIR__ . '/../../includes/bootstrap.php';
+  require_once __DIR__ . '/../../includes/upload_helpers.php';
   include "../../../config/library.php";
   opendb();
 

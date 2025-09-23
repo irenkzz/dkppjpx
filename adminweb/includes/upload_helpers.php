@@ -189,3 +189,32 @@ function gd_resize_contain($src, int $maxW, int $maxH, bool $asPng) {
     imagecopyresampled($dst, $src, 0, 0, 0, 0, $dstW, $dstH, $srcW, $srcH);
     return $dst;
 }
+
+function upload_file_secure(array $file, array $opts = []): array {
+    $defaults = [
+        'max_bytes'   => 10 * 1024 * 1024, // 10 MB
+        'allow_ext'   => ['pdf','doc','docx','jpg','jpeg','png'],
+        'dest_dir'    => __DIR__ . '/../../files',
+        'prefix'      => 'file_',
+    ];
+    $cfg = array_merge($defaults, $opts);
+
+    if (!is_dir($cfg['dest_dir'])) mkdir($cfg['dest_dir'], 0755, true);
+
+    if ($file['error'] !== UPLOAD_ERR_OK) throw new RuntimeException('Upload error: ' . $file['error']);
+    if ($file['size'] <= 0 || $file['size'] > $cfg['max_bytes']) throw new RuntimeException('File too large or empty');
+
+    $orig  = $file['name'] ?? 'upload.bin';
+    $ext   = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
+    if (!in_array($ext, $cfg['allow_ext'], true)) throw new RuntimeException('Extension not allowed');
+
+    $rand  = bin2hex(random_bytes(12));
+    $final = $cfg['prefix'] . $rand . '.' . $ext;
+    $dest  = rtrim($cfg['dest_dir'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $final;
+
+    if (!move_uploaded_file($file['tmp_name'], $dest)) throw new RuntimeException('Failed to move upload');
+
+    @chmod($dest, 0644);
+
+    return ['filename' => $final, 'dest_path' => $dest, 'ext' => $ext];
+}

@@ -152,6 +152,7 @@ else{
       header("location:../../media.php?module=".$module);
     }
     else{
+      //Update dengan mengubah gambar
       try {
           $res = upload_image_secure($_FILES['fupload'], [
               'dest_dir'     => __DIR__ . '/../../../foto_banner',
@@ -166,13 +167,35 @@ else{
           exit;
       }
 
-        $update = "UPDATE halamanstatis SET judul       = '$judul',
-                                            judul_seo   = '$judul_seo', 
-                                            isi_halaman = '$isi_halaman',
-                                            gambar      = '$nama_gambar'
-                                      WHERE id_halaman  = '$id'";
-        querydb($update);
-      
+       // Fetch OLD filename first (so we can delete it AFTER successful UPDATE)
+        $old = null;
+        $stmt = $dbconnection->prepare("SELECT gambar FROM halamanstatis WHERE id_halaman = ?");
+        if (!$stmt) { die("Prepare failed: " . $dbconnection->error); }
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->bind_result($old_gambar);
+        if ($stmt->fetch()) {
+            $old = $old_gambar;
+        }
+        $stmt->close();
+
+        // Prepared UPDATE including new gambar
+        $stmt = $dbconnection->prepare("
+            UPDATE halamanstatis
+              SET judul = ?, judul_seo = ?, isi_halaman = ?, gambar = ?
+            WHERE id_halaman = ?
+        ");
+        if (!$stmt) { die("Prepare failed: " . $dbconnection->error); }
+        $stmt->bind_param("ssssi", $judul, $judul_seo, $isi_halaman, $nama_gambar, $id);
+        $stmt->execute();
+        $stmt->close();
+
+        // Remove old files (after DB succeeds)
+        if (!empty($old)) {
+            $base = basename($old);
+            @unlink(__DIR__ . '/../../../foto_banner/' . $base);
+            @unlink(__DIR__ . '/../../../foto_banner/small_' . $base);
+        }
         header("location:../../media.php?module=".$module);
      
     }

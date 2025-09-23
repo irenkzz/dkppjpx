@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../adminweb/includes/upload_helpers.php';
+
 // Upload gambar untuk berita
 function UploadImage($fupload_name){
   //direktori gambar

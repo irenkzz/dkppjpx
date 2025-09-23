@@ -1,176 +1,216 @@
 <?php
-session_start();
-// Apabila user belum login
-if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
-	echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location = '../../index.php'</script>"; 
+require_once __DIR__ . '/../../includes/bootstrap.php';
+require_once __DIR__ . '/../../includes/upload_helpers.php';
+include "../../../config/library.php";
+include "../../../config/fungsi_seo.php";
+
+// auth gate (same behavior as before)
+if (empty($_SESSION['namauser']) && empty($_SESSION['passuser'])) {
+  echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location='../../index.php'</script>";
+  exit;
 }
-// Apabila user sudah login dengan benar, maka terbentuklah session
-else{
-  include "../../../config/koneksi.php";
-  include "../../../config/library.php";
-  include "../../../config/fungsi_seo.php";
-  include "../../../config/fungsi_thumb.php";
-  opendb();
 
-  $module = $_GET['module'];
-  $act    = $_GET['act'];
+opendb();
+global $dbconnection;
 
-  // Hapus berita
-  if ($module=='berita' AND $act=='hapus'){
-    $query = "SELECT gambar FROM berita WHERE id_berita='$_GET[id]'";
-    $hapus = querydb($query);
-    $r     = $hapus->fetch_array();
-    
-    if ($r['gambar']!=''){
-      $namafile = $r['gambar'];
-      // hapus file gambar yang berhubungan dengan berita tersebut
-      unlink("../../../foto_berita/$namafile");   
-      unlink("../../../foto_berita/small_$namafile");   
-      
-      // hapus data berita di database 
-      querydb("DELETE FROM berita WHERE id_berita='$_GET[id]'");      
-    }
-    else{
-      querydb("DELETE FROM berita WHERE id_berita='$_GET[id]'");
-    }
-    header("location:../../media.php?module=".$module);
-  }
+$module = $_GET['module'] ?? '';
+$act    = $_GET['act'] ?? '';
 
-  // Input berita
-  elseif ($module=='berita' AND $act=='input'){
-    $lokasi_file = $_FILES['fupload']['tmp_name'];
-    $tipe_file   = $_FILES['fupload']['type'];
-    $nama_file   = $_FILES['fupload']['name'];
-    $acak        = rand(1,99);
-    $nama_gambar = $acak.$nama_file; 
-  
-    if (!empty($_POST['tag_seo'])){
-      $tag_seo = $_POST['tag_seo'];
-      $tag     = implode(',',$tag_seo);
-    }
-    
-    $judul      = $_POST['judul'];            
-    $judul_seo  = seo_title($_POST['judul']);
-    $kategori   = $_POST['kategori'];
-    $isi_berita = $_POST['isi_berita'];
-
-    // Apabila tidak ada gambar yang di upload
-    if (empty($lokasi_file)){
-      $input = "INSERT INTO berita(judul,
-                                   judul_seo,     
-                                   id_kategori, 
-                                   username,
-                                   isi_berita,
-                                   hari,
-                                   tanggal,
-                                   jam,
-                                   tag) 
-	                         VALUES('$judul',
-                                  '$judul_seo', 
-                                  '$kategori', 
-                                  '$_SESSION[namauser]',
-                                  '$isi_berita',
-                                  '$hari_ini',
-                                  '$tgl_sekarang',
-                                  '$jam_sekarang',
-                                  '$tag')";
-      querydb($input);
-
-      header("location:../../media.php?module=".$module);
-    } 
-    
-    // Apabila ada gambar yang di upload
-    else{
-      if ($tipe_file != "image/jpeg" AND $tipe_file != "image/pjpeg"){
-        echo "<script>window.alert('Upload Gagal! Pastikan file yang di upload bertipe *.JPG');
-              window.location=('../../media.php?module=berita')</script>";
-      }
-      else{
-        //$folder = "../../../foto_berita/"; // folder untuk foto berita
-        //$ukuran = 200;                     // foto diperkecil jadi 200px (thumb)
-        //UploadFoto($nama_gambar, $folder, $ukuran);
-		    UploadImage($nama_gambar);
-        $input = "INSERT INTO berita(judul,
-                                   judul_seo,     
-                                   id_kategori, 
-                                   username,
-                                   isi_berita,
-                                   hari,
-                                   tanggal,
-                                   jam,
-                                   tag,
-                                   gambar) 
-	                         VALUES('$judul',
-                                  '$judul_seo', 
-                                  '$kategori', 
-                                  '$_SESSION[namauser]',
-                                  '$isi_berita',
-                                  '$hari_ini',
-                                  '$tgl_sekarang',
-                                  '$jam_sekarang',
-                                  '$tag',
-                                  '$nama_gambar')";
-        querydb($input);
-
-        header("location:../../media.php?module=".$module);
-      }
-    }
-  }
-
-  // Update berita
-  elseif ($module=='berita' AND $act=='update'){
-    $lokasi_file = $_FILES['fupload']['tmp_name'];
-    $tipe_file   = $_FILES['fupload']['type'];
-    $nama_file   = $_FILES['fupload']['name'];
-    $acak        = rand(1,99);
-    $nama_gambar = $acak.$nama_file; 
-
-    if (!empty($_POST['tag_seo'])){
-      $tag_seo = $_POST['tag_seo'];
-      $tag     = implode(',',$tag_seo);
-    }
-
-    $id         = $_POST['id'];
-    $judul      = $_POST['judul'];            
-    $judul_seo  = seo_title($_POST['judul']);
-    $kategori   = $_POST['kategori'];
-    $isi_berita = $_POST['isi_berita'];
-
-    // Apabila gambar tidak diganti
-    if (empty($lokasi_file)){
-      $update = "UPDATE berita SET judul       = '$judul',
-                                   judul_seo   = '$judul_seo', 
-                                   id_kategori = '$kategori',
-                                   isi_berita  = '$isi_berita',  
-                                   tag         = '$tag' 
-                             WHERE id_berita   = '$id'";
-      querydb($update);
-      
-      header("location:../../media.php?module=".$module);
-    }
-    else{
-      if ($tipe_file != "image/jpeg" AND $tipe_file != "image/pjpeg"){
-        echo "<script>window.alert('Upload Gagal! Pastikan file yang di upload bertipe *.JPG');
-              window.location=('../../media.php?module=berita')</script>";
-      }
-      else{
-        //$folder = "../../../foto_berita/"; // folder untuk foto berita
-        //$ukuran = 200;                     // foto diperkecil jadi 200px (thumb)
-        //UploadFoto($nama_gambar, $folder, $ukuran);
-		    UploadImage($nama_gambar);
-        $update = "UPDATE berita SET judul       = '$judul',
-                                     judul_seo   = '$judul_seo', 
-                                     id_kategori = '$kategori',
-                                     isi_berita  = '$isi_berita',  
-                                     tag         = '$tag',
-                                     gambar      = '$nama_gambar' 
-                               WHERE id_berita   = '$id'";
-        querydb($update);
-
-        header("location:../../media.php?module=".$module);
-      }
-    }
-  }
-  closedb();
+// CSRF required for any POST mutation
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  csrf_check();
 }
-?>
+
+/**
+ * Helpers
+ */
+function berita_delete_file_if_any(int $id): void {
+  global $dbconnection;
+  $stmt = $dbconnection->prepare("SELECT gambar FROM berita WHERE id_berita = ?");
+  $stmt->bind_param("i", $id);
+  $stmt->execute();
+  $stmt->bind_result($gambar);
+  $stmt->fetch();
+  $stmt->close();
+
+  if (!empty($gambar)) {
+    $base = basename($gambar);
+    @unlink(__DIR__ . "/../../../foto_berita/$base");
+    @unlink(__DIR__ . "/../../../foto_berita/small_$base");
+    @unlink(__DIR__ . "/../../../foto_berita/medium_$base"); // if you had this size previously
+  }
+}
+
+/**
+ * DELETE (POST only)
+ * UI should submit: POST to aksi_berita.php?module=berita&act=hapus with {csrf,id}
+ */
+if ($module === 'berita' && $act === 'hapus') {
+  if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Method Not Allowed.');
+  }
+  $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+  if ($id <= 0) {
+    header("Location: ../../media.php?module=".$module);
+    exit;
+  }
+
+  // remove files then row
+  berita_delete_file_if_any($id);
+
+  $stmt = $dbconnection->prepare("DELETE FROM berita WHERE id_berita = ?");
+  $stmt->bind_param("i", $id);
+  $stmt->execute();
+  $stmt->close();
+
+  header("Location: ../../media.php?module=".$module);
+  exit;
+}
+
+/**
+ * INSERT (POST)
+ */
+if ($module === 'berita' && $act === 'input') {
+  if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Method Not Allowed.');
+  }
+
+  $judul       = $_POST['judul'] ?? '';
+  $judul_seo   = seo_title($judul);
+  $kategori    = $_POST['kategori'] ?? '';
+  $isi_berita  = $_POST['isi_berita'] ?? '';
+  $tag         = '';
+  if (!empty($_POST['tag_seo']) && is_array($_POST['tag_seo'])) {
+    $tag = implode(',', $_POST['tag_seo']);
+  }
+
+  $nama_gambar = ''; // default no image
+
+  // if file uploaded, validate + re-encode via helper
+  if (!empty($_FILES['fupload']['tmp_name'])) {
+    try {
+      $res = upload_image_secure($_FILES['fupload'], [
+        'dest_dir'     => __DIR__ . '/../../../foto_berita',
+        'thumb_max_w'  => 390,  // keeps your legacy "medium" size roughly
+        'thumb_max_h'  => 390,
+        'jpeg_quality' => 85,
+        'prefix'       => 'berita_',
+      ]);
+      $nama_gambar = $res['filename']; // store this
+      // our helper also creates small_* thumb by default
+    } catch (Throwable $e) {
+      echo "<script>window.alert('Upload gagal: " . e($e->getMessage()) . "'); location=history.back();</script>";
+      exit;
+    }
+  }
+
+  // prepared INSERT
+  $stmt = $dbconnection->prepare("
+    INSERT INTO berita (judul, judul_seo, id_kategori, username, isi_berita, hari, tanggal, jam, tag, gambar)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ");
+  $username = $_SESSION['namauser'] ?? '';
+  $hari     = $hari_ini;
+  $tanggal  = $tgl_sekarang;
+  $jam      = $jam_sekarang;
+
+  $stmt->bind_param(
+    "ssisssssss",
+    $judul, $judul_seo, $kategori, $username, $isi_berita, $hari, $tanggal, $jam, $tag, $nama_gambar
+  );
+  $stmt->execute();
+  $stmt->close();
+
+  header("Location: ../../media.php?module=".$module);
+  exit;
+}
+
+/**
+ * UPDATE (POST)
+ */
+if ($module === 'berita' && $act === 'update') {
+  if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit('Method Not Allowed.');
+  }
+
+  $id          = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+  $judul       = $_POST['judul'] ?? '';
+  $judul_seo   = seo_title($judul);
+  $kategori    = $_POST['kategori'] ?? '';
+  $isi_berita  = $_POST['isi_berita'] ?? '';
+  $tag         = '';
+  if (!empty($_POST['tag_seo']) && is_array($_POST['tag_seo'])) {
+    $tag = implode(',', $_POST['tag_seo']);
+  }
+  if ($id <= 0) {
+    header("Location: ../../media.php?module=".$module);
+    exit;
+  }
+
+  // new image?
+  $has_new = !empty($_FILES['fupload']['tmp_name']);
+  if (!$has_new) {
+    // update text-only
+    $stmt = $dbconnection->prepare("
+      UPDATE berita
+         SET judul = ?, judul_seo = ?, id_kategori = ?, isi_berita = ?, tag = ?
+       WHERE id_berita = ?
+    ");
+    $stmt->bind_param("ssissi", $judul, $judul_seo, $kategori, $isi_berita, $tag, $id);
+    $stmt->execute();
+    $stmt->close();
+
+    header("Location: ../../media.php?module=".$module);
+    exit;
+  }
+
+  // handle new image upload
+  try {
+    $res = upload_image_secure($_FILES['fupload'], [
+      'dest_dir'     => __DIR__ . '/../../../foto_berita',
+      'thumb_max_w'  => 390,
+      'thumb_max_h'  => 390,
+      'jpeg_quality' => 85,
+      'prefix'       => 'berita_',
+    ]);
+    $nama_gambar = $res['filename'];
+  } catch (Throwable $e) {
+    echo "<script>window.alert('Upload gagal: " . e($e->getMessage()) . "'); location=history.back();</script>";
+    exit;
+  }
+
+  // fetch old to delete after successful update
+  $old = null;
+  $stmt = $dbconnection->prepare("SELECT gambar FROM berita WHERE id_berita = ?");
+  $stmt->bind_param("i", $id);
+  $stmt->execute();
+  $stmt->bind_result($old_gambar);
+  if ($stmt->fetch()) $old = $old_gambar;
+  $stmt->close();
+
+  // update including image
+  $stmt = $dbconnection->prepare("
+    UPDATE berita
+       SET judul = ?, judul_seo = ?, id_kategori = ?, isi_berita = ?, tag = ?, gambar = ?
+     WHERE id_berita = ?
+  ");
+  $stmt->bind_param("ssisssi", $judul, $judul_seo, $kategori, $isi_berita, $tag, $nama_gambar, $id);
+  $stmt->execute();
+  $stmt->close();
+
+  // remove old files
+  if (!empty($old)) {
+    $base = basename($old);
+    @unlink(__DIR__ . "/../../../foto_berita/$base");
+    @unlink(__DIR__ . "/../../../foto_berita/small_$base");
+    @unlink(__DIR__ . "/../../../foto_berita/medium_$base");
+  }
+
+  header("Location: ../../media.php?module=".$module);
+  exit;
+}
+
+closedb();
