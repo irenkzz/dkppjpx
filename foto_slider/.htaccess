@@ -1,0 +1,7 @@
+# deny PHP execution in upload folders
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .phar
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .phar
+php_flag engine off
+
+# Optional: force download
+Header set X-Content-Type-Options "nosniff"

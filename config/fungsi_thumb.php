@@ -77,12 +77,26 @@ function UploadSlider($fupload_name){
 }
 
 function UploadBanner($fupload_name){
-  //direktori banner
-  $vdir_upload = "../../../foto_banner/";
-  $vfile_upload = $vdir_upload . $fupload_name;
-
-  //Simpan gambar dalam ukuran sebenarnya
-  move_uploaded_file($_FILES["fupload"]["tmp_name"], $vfile_upload);
+  /**
+ * Legacy alias kept for BC. Prefer calling upload_image_secure() directly.
+ * This wrapper enforces the same security guarantees while preserving old call sites.
+ */
+  function UploadBanner($unused_name){
+    try {
+      $res = upload_image_secure($_FILES['fupload'], [
+        'dest_dir'     => __DIR__ . '/../../foto_banner',
+        'thumb_max_w'  => 480,
+        'thumb_max_h'  => 320,
+        'jpeg_quality' => 85,
+        'prefix'       => 'banner_',
+      ]);
+      // Return the randomized filename so callers can store it
+      return $res['filename'];
+    } catch (Throwable $e) {
+      // Fail closed
+      throw $e;
+    }
+  }
 }
 
 
