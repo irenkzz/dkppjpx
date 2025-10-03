@@ -54,6 +54,8 @@ function query_result($result, $row, $field)
     return $data[$field];  // Kembalikan data dari kolom yang diinginkan
 }
 
+
+
 $key="SU5ESElAIyE=";
 $val = new SKPDLotimvalidasi;
 ?>
