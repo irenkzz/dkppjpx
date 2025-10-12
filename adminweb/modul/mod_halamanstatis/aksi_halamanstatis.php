@@ -27,7 +27,9 @@ else{
 
   // Hapus halaman statis
   if ($module=='halamanstatis' AND $act=='hapus'){
-    
+
+    require_post_csrf();
+
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id <= 0) {
       header("location:../../media.php?module=".$module);
@@ -62,6 +64,8 @@ else{
 
   // Input halaman statis
   elseif ($module=='halamanstatis' AND $act=='input'){
+    require_post_csrf();
+    
     $lokasi_file = $_FILES['fupload']['tmp_name'];
     $tipe_file   = $_FILES['fupload']['type'];
     $nama_file   = $_FILES['fupload']['name'];
@@ -125,6 +129,8 @@ else{
 
   // Update halaman statis
   elseif ($module=='halamanstatis' AND $act=='update'){
+    require_post_csrf();
+    
     $lokasi_file = $_FILES['fupload']['tmp_name'];
     $tipe_file   = $_FILES['fupload']['type'];
     $nama_file   = $_FILES['fupload']['name'];

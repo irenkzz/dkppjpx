@@ -16,13 +16,18 @@ else{
 
   // Only allow POST for delete
   if ($module === 'hubungi' && $act === 'hapus') {
-      require_post_csrf(); // exits if not POST or invalid token
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        exit('Method Not Allowed.');
+    }
 
-      $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-      if ($id <= 0) {
-          header("Location: ../../media.php?module=".$module);
-          exit;
-      }
+    require_post_csrf();
+
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if ($id <= 0) {
+        header("Location: ../../media.php?module=".$module);
+        exit;
+    }
 
       // Delete row with prepared statement
       $stmt = $dbconnection->prepare("DELETE FROM hubungi WHERE id_hubungi = ?");

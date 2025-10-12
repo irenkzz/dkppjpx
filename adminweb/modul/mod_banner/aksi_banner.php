@@ -14,7 +14,7 @@ else{
   require_once __DIR__ . "/../../../config/koneksi.php";
   require_once __DIR__ . "/../../includes/upload_helpers.php";
   require_once __DIR__ . "/../../includes/bootstrap.php"; // provides require_post_csrf()
-  
+
   opendb();
   global $dbconnection;
 
@@ -35,6 +35,17 @@ else{
 
     $judul = $_POST['judul'] ?? '';
     $link  = $_POST['link'] ?? '';
+    
+    // Validate optional URL
+    $link = trim($link ?? '');
+    if ($link !== '') {
+      $ok = filter_var($link, FILTER_VALIDATE_URL);
+      $scheme = $ok ? parse_url($link, PHP_URL_SCHEME) : null;
+      if (!$ok || !in_array($scheme, ['http', 'https'], true)) {
+        echo "<script>window.alert('Link tidak valid. Gunakan URL http/https lengkap.');history.back();</script>";
+        exit;
+      }
+    }
 
     $has_new = !empty($_FILES['fupload']['tmp_name']);
 

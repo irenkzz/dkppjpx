@@ -65,7 +65,8 @@ else{
                   <h3 class="box-title">Edit Banner</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=banner&act=update" class="form-horizontal" enctype="multipart/form-data">
-					<input type="hidden" name="id" value="<?php echo $r['id_banner']; ?>" />
+				<?php csrf_field(); ?>	
+				<input type="hidden" name="id" value="<?php echo $r['id_banner']; ?>" />
 					<div class="box-body">
 						<div class="form-group">
 							<label for="judul" class="col-sm-2 control-label">Judul</label>
