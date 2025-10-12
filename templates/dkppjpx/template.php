@@ -7,9 +7,15 @@ if (isset($_GET['id'])){
   $sql = querydb_prepared("SELECT * FROM berita WHERE id_berita = ?", "i", [$id_berita]);
   $dt = $sql->fetch_array();
   
-  $isi_description = strip_tags(@$dt['isi_berita']);
-  $description = substr($isi_description,0,200);
-  $description = substr($isi_description,0,strrpos($description," "));
+  if (!$dt) {
+    $isi_description = '';
+    $description = '';
+	} else {
+    $isi_description = strip_tags($dt['isi_berita'] ?? '');
+    $description = substr($isi_description, 0, 200);
+    $description = substr($isi_description, 0, strrpos($description, " "));
+	}
+  
   $url = $tiden['alamat_website']."baca-berita-".@$dt['id_berita']."-".@$dt['judul_seo'].".html";
   $image = $tiden['alamat_website']."foto_berita/".@$dt['gambar'];
 }else{

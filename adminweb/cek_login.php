@@ -1,51 +1,60 @@
-s<?php
-include "../config/koneksi.php";
+<?php
+session_start();
+include_once __DIR__ . "/config/koneksi.php";
+
 opendb();
-// fungsi untuk menghindari injeksi dari user yang jahil
-function anti_injection($data){
-	$filter  = stripslashes(strip_tags(htmlspecialchars($data,ENT_QUOTES)));
-	return $filter;
+
+// Preserve current hashing scheme for compatibility
+$kunci = base64_decode($key);
+
+function anti_injection($data) {
+    return stripslashes(strip_tags(htmlspecialchars($data, ENT_QUOTES)));
 }
-$kunci=base64_decode($key);
-$username = anti_injection($_POST['username']);
-$password = anti_injection(md5($_POST['password'].$kunci));
 
-// menghindari sql injection
-$injeksi_username = escape_string($username);
-$injeksi_password = escape_string($password);
-	
-// pastikan username dan password adalah berupa huruf atau angka.
-if (!ctype_alnum($injeksi_username) OR !ctype_alnum($injeksi_password)){
-  echo "Sekarang loginnya tidak bisa di injeksi lho.";
+$username_raw = $_POST['username'] ?? '';
+$password_raw = $_POST['password'] ?? '';
+
+$username = anti_injection($username_raw);
+$password = anti_injection(md5($password_raw . $kunci));
+
+// Optional: basic allowlist like the original (keeps behavior)
+if (!ctype_alnum($username) || !ctype_alnum($password)) {
+    echo "<script>alert('Sekarang loginnya tidak bisa di injeksi lho.'); window.location = 'index.php'</script>";
+    closedb();
+    exit;
 }
-else{
-	$query  = "SELECT * FROM users WHERE username='$username' AND password='$password' AND blokir='N'";
-	$login  = querydb($query);
-	$ketemu = $login->num_rows;
-	$r      = $login->fetch_array();
 
-	// Apabila username dan password ditemukan (benar)
-	if ($ketemu > 0){
-		session_start();
+// anchor: cek_login-prepared-compatible
+$login = querydb_prepared(
+    "SELECT * FROM users WHERE username = ? AND password = ? AND blokir = 'N' LIMIT 1",
+    "ss",
+    [$username, $password]
+);
 
-		// bikin variabel session
-    $_SESSION['namauser']    = $r['username'];
-    $_SESSION['passuser']    = $r['password'];
-    $_SESSION['namalengkap'] = $r['nama_lengkap'];
-    $_SESSION['leveluser']   = $r['level'];
-      
-    // bikin id_session yang unik dan mengupdatenya agar slalu berubah 
-    // agar user biasa sulit untuk mengganti password Administrator 
-    $sid_lama = session_id();
-	  session_regenerate_id();
+if ($login && $login->num_rows > 0) {
+    $r = $login->fetch_array();
+
+    // Regenerate session ID on login for security
+    session_regenerate_id(true);
+
+    $_SESSION['namauser']     = $r['username'];
+    $_SESSION['passuser']     = $r['password'];
+    $_SESSION['namalengkap']  = $r['nama_lengkap'];
+    $_SESSION['leveluser']    = $r['level'];
+
+    // Keep original behavior: update id_session and redirect
     $sid_baru = session_id();
-    querydb("UPDATE users SET id_session='$sid_baru' WHERE username='$username'");
+    exec_prepared("UPDATE users SET id_session = ? WHERE username = ?", "ss", [$sid_baru, $username]);
 
     header("location:media.php?module=beranda");
-	}
-	else{
-		echo "<script>alert('Gagal Login.'); window.location = 'index.php'</script>";
-	}
+    exit;
+} else {
+    echo "<link href='style_login.css' rel='stylesheet' type='text/css' />
+          <center>LOGIN GAGAL! <br>
+          Username atau Password Anda tidak benar.<br>
+          Atau account Anda sedang diblokir.<br>";
+    echo "<a href=index.php><b>ULANGI LAGI</b></a></center>";
 }
+
 closedb();
 ?>

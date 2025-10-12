@@ -398,10 +398,17 @@ if ($_GET['module']=='home'){
 						<?php 
 						$agenda = querydb("SELECT * FROM agenda ORDER BY id_agenda DESC LIMIT 5");
 						while($tgd=$agenda->fetch_array()){
-							$tgl_posting = tgl_indo($tgd['tgl_posting']);
-						    $tgl_mulai   = tgl_indo($tgd['tgl_mulai']);
-						    $tgl_selesai = tgl_indo($tgd['tgl_selesai']);
-						    $isi_agenda  = nl2br($tgd['isi_agenda']);
+							$tgl_posting_raw = $tgd['tgl_posting']  ?? '';
+							$tgl_mulai_raw   = $tgd['tgl_mulai']    ?? '';
+							$tgl_selesai_raw = $tgd['tgl_selesai']  ?? '';
+
+							$tgl_posting = tgl_indo($tgl_posting_raw);
+							$tgl_mulai   = tgl_indo($tgl_mulai_raw);
+							$tgl_selesai = tgl_indo($tgl_selesai_raw);
+
+							$isi_agenda  = nl2br($tgd['isi_agenda'] ?? '');
+
+							$rentang_tgl = $tgl_mulai && $tgl_selesai ? "$tgl_mulai s/d $tgl_selesai" : ($tgl_mulai ?: $tgl_selesai);
 						?>
 						<li class="media space margin-bottom-20">
 							<div class="media-left">
@@ -417,7 +424,7 @@ if ($_GET['module']=='home'){
 								<ul class="list-inline small">
 									<li><b><i>
 										<i class="fa fa-calendar"></i> <?php echo $tgl_posting; ?></i></b><b><i>
-										<i class="fa fa-map-marker"></i> <?php echo $tgd['tempat']." - ".$tgl_mulai." s/d ".$tgl_selesai." Pukul ".$tgd['jam']; ?></i></b>
+										<i class="fa fa-map-marker"></i> <?php echo $tgd['tempat']." - ".$rentang_tgl." Pukul ".$tgd['jam']; ?></i></b>
 										<b>
 										<i class="fa fa-user"></i> <?php echo $tgd['pengirim']; ?></b>
 										</li>
@@ -1277,10 +1284,18 @@ elseif ($_GET['module']=='semuaagenda'){
 				 	$sql = querydb("SELECT * FROM agenda  
 				                      ORDER BY id_agenda DESC LIMIT $posisi,$batas");		 
 				  while($d=$sql->fetch_array()){
-				    $tgl_posting = tgl_indo($d['tgl_posting']);
-				    $tgl_mulai   = tgl_indo($d['tgl_mulai']);
-				    $tgl_selesai = tgl_indo($d['tgl_selesai']);
-				    $isi_agenda  = nl2br($d['isi_agenda']);
+				    $tgl_posting_raw = $tgd['tgl_posting']  ?? '';
+					$tgl_mulai_raw   = $tgd['tgl_mulai']    ?? '';
+					$tgl_selesai_raw = $tgd['tgl_selesai']  ?? '';
+
+					$tgl_posting = tgl_indo($tgl_posting_raw);
+					$tgl_mulai   = tgl_indo($tgl_mulai_raw);
+					$tgl_selesai = tgl_indo($tgl_selesai_raw);
+
+					$isi_agenda  = nl2br($tgd['isi_agenda'] ?? '');
+
+					$rentang_tgl = $tgl_mulai && $tgl_selesai ? "$tgl_mulai s/d $tgl_selesai" : ($tgl_mulai ?: $tgl_selesai);
+				    
 				    ?>
 				          <div class="col-md-12 col-sm-12 col-xs-12 masonry-grid-item no-padding">
 						<article class="content-box box-img bg-light box-clickable media">
@@ -1298,7 +1313,7 @@ elseif ($_GET['module']=='semuaagenda'){
 								<ul class="list-inline small">
 									<li><b><i>
 										<i class="fa fa-calendar"></i> <?php echo $tgl_posting; ?></i></b><b><i>
-										<i class="fa fa-map-marker"></i> <?php echo $d['tempat']." - ".$tgl_mulai." s/d ".$tgl_selesai." Pukul ".$d['jam']; ?></i></b>
+										<i class="fa fa-map-marker"></i> <?php echo $d['tempat']." - ".$rentang_tgl." Pukul ".$d['jam']; ?></i></b>
 										<b>
 										<i class="fa fa-user"></i> <?php echo $d['pengirim']; ?></b>
 										</li>
@@ -1463,10 +1478,17 @@ elseif ($_GET['module']=='semuadownload'){
 				 	$sql = querydb("SELECT * FROM download  
 				                      ORDER BY id_download DESC LIMIT $posisi,$batas");			 
 				  while($d=$sql->fetch_array()){
-				    $tgl_posting = tgl_indo($d['tgl_posting']);
-				    $tgl_mulai   = tgl_indo($d['tgl_mulai']);
-				    $tgl_selesai = tgl_indo($d['tgl_selesai']);
-				    $isi_agenda  = nl2br($d['isi_agenda']);
+				    $tgl_posting_raw = $tgd['tgl_posting']  ?? '';
+					$tgl_mulai_raw   = $tgd['tgl_mulai']    ?? '';
+					$tgl_selesai_raw = $tgd['tgl_selesai']  ?? '';
+
+					$tgl_posting = tgl_indo($tgl_posting_raw);
+					$tgl_mulai   = tgl_indo($tgl_mulai_raw);
+					$tgl_selesai = tgl_indo($tgl_selesai_raw);
+
+					$isi_agenda  = nl2br($tgd['isi_agenda'] ?? '');
+
+					$rentang_tgl = $tgl_mulai && $tgl_selesai ? "$tgl_mulai s/d $tgl_selesai" : ($tgl_mulai ?: $tgl_selesai);
 				    ?>
 				    <div class="col-md-12 col-sm-12 col-xs-12 masonry-grid-item no-padding">
 						<article class="content-box box-img bg-light box-clickable media">

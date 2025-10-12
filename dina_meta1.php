@@ -1,12 +1,16 @@
-<?php    
-    if (isset($_GET['id'])){
-      $sql = querydb("select judul from berita where id_berita='$_GET[id]'");
-      $j   = $sql->fetch_array();
-		  echo "$j[judul]";
-    }
-    else{
-      $sql2 = querydb("select meta_deskripsi from identitas LIMIT 1");
-      $j2   = $sql2->fetch_array();
-		  echo "$j2[meta_deskripsi]";
-    }
+<?php
+
+/// DB is opened by the parent (media.php/template.php)
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+if ($id > 0) {
+    $res = querydb_prepared("SELECT nama_kategori FROM kategori WHERE id_kategori = ?", "i", [$id]);
+    $row = $res ? $res->fetch_array() : null;
+    $nama = $row['nama_kategori'] ?? 'Kategori';
+} else {
+    $nama = 'Kategori';
+}
+
+echo htmlspecialchars($nama, ENT_QUOTES, 'UTF-8');
+
 ?>
