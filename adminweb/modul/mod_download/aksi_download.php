@@ -13,6 +13,11 @@ else{
   $module = $_GET['module'];
   $act    = $_GET['act'];
 
+  //Wajibkan CSRF untuk semua POST
+  if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_check();
+  }
+
   // Hapus download
   if ($module === 'download' && $act === 'hapus') {
     require_post_csrf(); // enforce POST + CSRF
