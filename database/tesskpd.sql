@@ -10313,7 +10313,7 @@ CREATE TABLE `templates` (
 --
 
 INSERT INTO `templates` (`id_templates`, `judul`, `pembuat`, `folder`, `aktif`) VALUES
-(11, 'SKPD LOTIM', 'SelongWeb.Com', 'templates/skpdlotim', 'Y');
+(11, 'DKPP JPX', 'DKPP', 'templates/dkppjpx', 'Y');
 
 -- --------------------------------------------------------
 

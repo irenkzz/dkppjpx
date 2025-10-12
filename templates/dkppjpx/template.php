@@ -3,8 +3,9 @@ $ambiliden=querydb("SELECT * FROM identitas LIMIT 1");
 $tiden=$ambiliden->fetch_array();
 
 if (isset($_GET['id'])){
-  $sql = querydb("select * from berita where id_berita='$_GET[id]'");
-  $dt   = $sql->fetch_array();
+  $id_berita = (int)$_GET['id'];
+  $sql = querydb_prepared("SELECT * FROM berita WHERE id_berita = ?", "i", [$id_berita]);
+  $dt = $sql->fetch_array();
   
   $isi_description = strip_tags(@$dt['isi_berita']);
   $description = substr($isi_description,0,200);
@@ -155,22 +156,42 @@ if (isset($_GET['id'])){
               $waktu   = time(); // 
 
               // Mencek berdasarkan IPnya, apakah user sudah pernah mengakses hari ini 
-              $s = querydb("SELECT * FROM statistik WHERE ip='$ip' AND tanggal='$tanggal'");
+             $s = querydb_prepared("SELECT 1 FROM statistik WHERE ip = ? AND tanggal = ?", "ss", [$ip, $tanggal]);
               // Kalau belum ada, simpan data user tersebut ke database
-              if($s->num_rows == 0){
-                querydb("INSERT INTO statistik(ip, tanggal, hits, online) VALUES('$ip','$tanggal','1','$waktu')");
-              } 
-              else{
-                querydb("UPDATE statistik SET hits=hits+1, online='$waktu' WHERE ip='$ip' AND tanggal='$tanggal'");
-              }
+              if ($s->num_rows === 0) {
+				exec_prepared(
+						"INSERT INTO statistik(ip, tanggal, hits, online) VALUES(?, ?, 1, ?)",
+						"ssi",
+						[$ip, $tanggal, $waktu]
+					);
+				} else {
+					exec_prepared(
+						"UPDATE statistik SET hits = hits + 1, online = ? WHERE ip = ? AND tanggal = ?",
+						"iss",
+						[$waktu, $ip, $tanggal]
+					);
+				}
 
-              $pengunjung       = querydb("SELECT * FROM statistik WHERE tanggal='$tanggal' GROUP BY ip")->num_rows;
+              // anchor: statistik-aggregates
+				$pengunjung = querydb_prepared(
+					"SELECT ip FROM statistik WHERE tanggal = ? GROUP BY ip",
+					"s",
+					[$tanggal]
+					)->num_rows;
               $totalpengunjung  = query_result(querydb("SELECT COUNT(hits) AS totalhits FROM statistik"), 0, 'totalhits'); 
-              $hits             = querydb("SELECT SUM(hits) as hitstoday FROM statistik WHERE tanggal='$tanggal' GROUP BY tanggal")->fetch_array(); 
+              $hits = querydb_prepared(
+				"SELECT SUM(hits) AS hitstoday FROM statistik WHERE tanggal = ? GROUP BY tanggal",
+				"s",
+				[$tanggal]
+				)->fetch_array(); 
               $totalhits        = query_result(querydb("SELECT SUM(hits) AS totalhits FROM statistik"), 0, 'totalhits'); 
               $tothitsgbr       = query_result(querydb("SELECT SUM(hits) AS totalhits FROM statistik"), 0, 'totalhits'); 
               $bataswaktu       = time() - 300;
-              $pengunjungonline = querydb("SELECT * FROM statistik WHERE online > '$bataswaktu'")->num_rows;
+              $pengunjungonline = querydb_prepared(
+				"SELECT 1 FROM statistik WHERE online > ?",
+				"i",
+				[$bataswaktu]
+				)->num_rows;
             ?>
 				<h5 class="myriadpro margin-bottom-15">Statistik</h5>
 					<b><font size="5"><?php echo number_format($tothitsgbr,0,',','.'); ?></font></b><br>

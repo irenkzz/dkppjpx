@@ -51,12 +51,21 @@ if(($j % $max == 0) && ($j != 0)){
   $v_text .= " " . $split_text[$i] . " ";
 }
 }
+	// anchor: komentar-insert
+	$id_berita = (int)($_POST['id'] ?? 0);
+	exec_prepared(
+	"INSERT INTO komentar(nama_komentar, url, isi_komentar, id_berita, tgl, jam_komentar)
+	VALUES(?, ?, ?, ?, ?, ?)",
+	"sssiss",
+	[$nama_komentar, $url, $v_text, $id_berita, $tgl_sekarang, $jam_sekarang]
+	);
 
-    $sql = querydb("INSERT INTO komentar(nama_komentar,url,isi_komentar,id_berita,tgl,jam_komentar) 
-                        VALUES('$nama_komentar','$url','$v_text','$_POST[id]','$tgl_sekarang','$jam_sekarang')");
+	// safer redirect
+	$redir_id  = $id_berita;
+	$redir_seo = htmlspecialchars($_POST['judul_seo'] ?? '', ENT_QUOTES, 'UTF-8');
+	echo "<meta http-equiv='refresh' content='0; url=berita-$redir_id-$redir_seo.html'>";
 
-    echo "<meta http-equiv='refresh' content='0; url=berita-$_POST[id]-$_POST[judul_seo].html'>";
-		}else{
+    	}else{
 			echo "Kode yang Anda masukkan tidak cocok<br />
 			      <a href=javascript:history.go(-1)><b>Ulangi Lagi</b></a>";
 		}

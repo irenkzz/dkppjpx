@@ -35,6 +35,46 @@ function insert_id()
     return $dbconnection->insert_id;
 }
 
+/**
+ * Run a prepared SELECT and return mysqli_result (requires mysqlnd).
+ * Usage: querydb_prepared("SELECT ... WHERE id = ?", "i", [$id])
+ */
+function querydb_prepared($sql, $types = "", $params = [])
+{
+    global $dbconnection;
+    $stmt = $dbconnection->prepare($sql);
+    if ($stmt === false) {
+        die("Prepare failed: " . $dbconnection->error);
+    }
+    if ($types && $params) {
+        $stmt->bind_param($types, ...$params);
+    }
+    if (!$stmt->execute()) {
+        die("Execute failed: " . $stmt->error);
+    }
+    return $stmt->get_result();
+}
+
+/**
+ * Run a prepared INSERT/UPDATE/DELETE.
+ * Returns: affected rows.
+ */
+function exec_prepared($sql, $types = "", $params = [])
+{
+    global $dbconnection;
+    $stmt = $dbconnection->prepare($sql);
+    if ($stmt === false) {
+        die("Prepare failed: " . $dbconnection->error);
+    }
+    if ($types && $params) {
+        $stmt->bind_param($types, ...$params);
+    }
+    if (!$stmt->execute()) {
+        die("Execute failed: " . $stmt->error);
+    }
+    return $stmt->affected_rows;
+}
+
 function querydb($query)
 {
     global $dbconnection;
@@ -57,5 +97,5 @@ function query_result($result, $row, $field)
 
 
 $key="SU5ESElAIyE=";
-$val = new SKPDLotimvalidasi;
+$val = new DKPPJPXvalidasi;
 ?>

@@ -1,5 +1,5 @@
 <?php
-class SKPDLotimvalidasi{
+class DKPPJPXvalidasi{
 	function __construct(){}
 	
 	function validasi($str, $tipe){
