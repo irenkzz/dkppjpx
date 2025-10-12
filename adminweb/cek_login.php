@@ -1,6 +1,6 @@
 <?php
 session_start();
-include_once __DIR__ . "/config/koneksi.php";
+include_once __DIR__ . "/../config/koneksi.php";
 
 opendb();
 

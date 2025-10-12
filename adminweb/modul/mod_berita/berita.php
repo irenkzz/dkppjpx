@@ -5,9 +5,10 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+	require_once __DIR__ . '/../../includes/bootstrap.php';
+	
   // fungsi untuk check box Tag (Berita Terkait) di form input dan edit berita 
   function GetCheckBox($table, $key, $Label, $Nilai='') {
-    include "../config/koneksi.php";
     $s = "SELECT * FROM $table ORDER BY $Label";
     $u = querydb($s);
     $_arrNilai = explode(',', $Nilai);
@@ -89,6 +90,7 @@ else{
                   <h3 class="box-title">Tambah Berita</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=berita&act=input" class="form-horizontal" enctype="multipart/form-data">
+					<?php csrf_field(); ?>
 					<div class="box-body">
 						<div class="form-group">
 							<label for="judul" class="col-sm-2 control-label">Judul</label>
@@ -96,6 +98,7 @@ else{
 								<input type="text" class="form-control" id="judul" name="judul" />
 							</div>
 						</div>
+
 						<div class="form-group">
 							<label for="kategori" class="col-sm-2 control-label">Kategori</label>
 							<div class="col-sm-10">
@@ -111,13 +114,21 @@ else{
 								</select>
 							</div>
 						</div>
-						
+
+						<div class="form-group">
+							<label for="tag" class="col-sm-2 control-label">Tag</label>
+							<div class="col-sm-10">
+								<?php echo GetCheckBox("tag", "tag_seo", "nama_tag"); ?>
+							</div>
+						</div>
+								
 						<div class="form-group">
 							<label for="isi_berita" class="col-sm-2 control-label">Isi Berita</label>
 							<div class="col-sm-10">
 								<textarea class="form-control" id="isi_berita" name="isi_berita"></textarea>
 							</div>
 						</div>
+						
 						<div class="form-group">
 							<label for="fupload" class="col-sm-2 control-label">Gambar</label>
 							<div class="col-sm-10">
@@ -152,6 +163,7 @@ else{
                   <h3 class="box-title">Edit Berita</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=berita&act=update" class="form-horizontal" enctype="multipart/form-data">
+					<?php csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo $r['id_berita']; ?>" />
 					<div class="box-body">
 						<div class="form-group">
@@ -160,6 +172,7 @@ else{
 								<input type="text" class="form-control" id="judul" name="judul" value="<?php echo $r['judul']; ?>" />
 							</div>
 						</div>
+
 						<div class="form-group">
 							<label for="kategori" class="col-sm-2 control-label">Kategori</label>
 							<div class="col-sm-10">
@@ -184,11 +197,19 @@ else{
 						</div>
 						
 						<div class="form-group">
+							<label class="col-sm-2 control-label">Tag</label>
+							<div class="col-sm-10">
+								<?php echo GetCheckBox("tag", "tag_seo", "nama_tag", $r['tag']); ?>
+							</div>
+						</div>
+						
+						<div class="form-group">
 							<label for="isi_berita" class="col-sm-2 control-label">Isi Berita</label>
 							<div class="col-sm-10">
 								<textarea class="form-control" id="isi_berita" name="isi_berita"><?php echo $r['isi_berita']; ?></textarea>
 							</div>
 						</div>
+						
 						<div class="form-group">
 							<label for="fupload" class="col-sm-2 control-label">Gambar</label>
 							<div class="col-sm-10">
@@ -202,6 +223,7 @@ else{
 								?>
 							</div>
 						</div>
+
 						<div class="form-group">
 							<label for="fupload" class="col-sm-2 control-label">Ganti Gambar</label>
 							<div class="col-sm-10">

@@ -606,7 +606,28 @@ elseif($_GET['module']=='detailberita'){
                       AND id_berita = '".abs((int)$_GET['id'])."'");
 	$d   = $detail->fetch_array();
 	$tgl = tgl_indo($d['tanggal']);
-	$baca = $d['dibaca']+1;
+
+	// Start session if not already started
+	if (session_status() === PHP_SESSION_NONE) {
+		session_start();
+	}
+
+	$id_berita = abs((int)($_GET['id'] ?? 0));
+
+	// Check if this article ID is already in session
+	if (!isset($_SESSION['viewed_articles'])) {
+		$_SESSION['viewed_articles'] = [];
+	}
+
+	// Only increment if not viewed before in this session
+	if (!in_array($id_berita, $_SESSION['viewed_articles'])) {
+		exec_prepared("UPDATE berita SET dibaca = dibaca + 1 WHERE id_berita = ?", "i", [$id_berita]);
+		$_SESSION['viewed_articles'][] = $id_berita;
+	}
+
+	// update local value for display
+	$d['dibaca'] = (int)($d['dibaca'] ?? 0) + 1;
+
 
 ?>
 <section class="site-content padding-bottom-0 margin-top-15">
@@ -770,6 +791,7 @@ elseif($_GET['module']=='detailberita'){
 </section>
 <?php
 }
+
 // MODUDL HASIL POLLING
 elseif($_GET['module']=='hasilpoling'){
 ?>

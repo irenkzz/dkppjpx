@@ -81,9 +81,10 @@ if ($module === 'berita' && $act === 'input') {
   $judul_seo   = seo_title($judul);
   $kategori    = $_POST['kategori'] ?? '';
   $isi_berita  = $_POST['isi_berita'] ?? '';
-  $tag         = '';
   if (!empty($_POST['tag_seo']) && is_array($_POST['tag_seo'])) {
     $tag = implode(',', $_POST['tag_seo']);
+  } else {
+      $tag = '';
   }
 
   $nama_gambar = ''; // default no image
@@ -141,10 +142,14 @@ if ($module === 'berita' && $act === 'update') {
   $judul_seo   = seo_title($judul);
   $kategori    = $_POST['kategori'] ?? '';
   $isi_berita  = $_POST['isi_berita'] ?? '';
-  $tag         = '';
+  //$tag         = '';
   if (!empty($_POST['tag_seo']) && is_array($_POST['tag_seo'])) {
     $tag = implode(',', $_POST['tag_seo']);
   }
+  else{
+    $tag = '';
+  }
+
   if ($id <= 0) {
     header("Location: ../../media.php?module=".$module);
     exit;

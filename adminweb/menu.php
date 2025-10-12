@@ -62,6 +62,7 @@ else{
 				<ul class="treeview-menu">
 					<li class="<?php if($module=="berita") echo "active"; ?>"><a href="?module=berita"><i class="fa fa-circle-o"></i> <span>Berita</span></a></li>
 					<li class="<?php if($module=="kategori") echo "active"; ?>"><a href="?module=kategori"><i class="fa fa-circle-o"></i> <span>Kategori</span></a></li>
+					<li class="<?php if($module=="kategori") echo "active"; ?>"><a href="?module=tag"><i class="fa fa-circle-o"></i> <span>Tag</span></a></li>
 				</ul>
 			</li>
 			<?php
