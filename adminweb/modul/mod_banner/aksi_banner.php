@@ -14,86 +14,16 @@ else{
   require_once __DIR__ . "/../../../config/koneksi.php";
   require_once __DIR__ . "/../../includes/upload_helpers.php";
   require_once __DIR__ . "/../../includes/bootstrap.php"; // provides require_post_csrf()
+  
   opendb();
   global $dbconnection;
 
   $module = $_GET['module'];
   $act    = $_GET['act'];
 
-  // Hapus banner
-  if ($module=='banner' AND $act=='hapus'){    
-    // enforce POST and CSRF token
-    require_post_csrf();
-    
-    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-    if ($id <= 0) {
-      header("location:../../media.php?module=".$module);
-      exit;
-    }
-
-    // 1) Fetch current filename (if any)
-    $stmt = $dbconnection->prepare("SELECT gambar FROM banner WHERE id_banner = ?");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $stmt->bind_result($gambar);
-    $hasRow = $stmt->fetch();
-    $stmt->close();
-
-    // 2) Delete row
-    $stmt = $dbconnection->prepare("DELETE FROM banner WHERE id_banner = ?");
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $stmt->close();
-
-    // 3) After DB delete, remove files (if they existed)
-    if ($hasRow && !empty($gambar)) {
-      $base = basename($gambar);
-      @unlink(__DIR__ . "/../../../foto_banner/" . $base);
-      @unlink(__DIR__ . "/../../../foto_banner/small_" . $base);
-    }
-
-    // 4) Redirect back to module
-    header("location:../../media.php?module=".$module);
-    exit;
-  }
-
-  // Input banner
-  elseif ($module=='banner' AND $act=='input'){
-      require_post_csrf();
-
-      // Collect input
-      $judul = $_POST['judul'] ?? '';
-      $link  = $_POST['link'] ?? '';
-
-      $nama_gambar = '';
-      if (!empty($_FILES['fupload']['tmp_name'])) {
-        try {
-          $res = upload_image_secure($_FILES['fupload'], [
-            'dest_dir'     => __DIR__ . '/../../../foto_banner',
-            'thumb_max_w'  => 480,
-            'thumb_max_h'  => 320,
-            'jpeg_quality' => 85,
-            'prefix'       => 'banner_',
-          ]);
-          $nama_gambar = $res['filename'];
-        } catch (Throwable $e) {
-          echo "<script>window.alert('Upload gagal: ".e($e->getMessage())."');history.back();</script>";
-          exit;
-        }
-      }
-
-      // Insert new record
-      $stmt = $dbconnection->prepare("INSERT INTO banner (judul, link, gambar) VALUES (?, ?, ?)");
-      $stmt->bind_param("sss", $judul, $link, $nama_gambar);
-      $stmt->execute();
-      $stmt->close();
-
-      header("location:../../media.php?module=".$module);
-      exit; 
-  }
 
   // Update banner
-  elseif ($module === 'banner' && $act === 'update') {
+  if ($module === 'banner' && $act === 'update') {
     // enforce POST and CSRF
     require_post_csrf();
 
