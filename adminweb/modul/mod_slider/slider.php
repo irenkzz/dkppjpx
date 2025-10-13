@@ -1,4 +1,5 @@
 <?php
+
 // Apabila user belum login
 if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 	echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location = '../../index.php'</script>";
@@ -46,8 +47,14 @@ else{
 						echo "<tr><td>$no</td>
 							<td><img src=\"../foto_slider/small_$r[gmb_slider]\"></td>
 							<td><a href=\"$r[link]\" target=\"_blank\">$r[link]</a></td>
-							<td align=\"center\"><a href=\"?module=slider&act=editslider&id=$r[id_slider]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp; 
-							<a href=\"$aksi?module=slider&act=hapus&id=$r[id_slider]\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS SLIDER INI ?')\" title=\"Hapus Data\"><i class=\"fa fa-trash text-red\"></i></a></td>
+							<td align=\"center\"><a href=\"?module=slider&act=editslider&id=$r[id_slider]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp;
+							 	<form action=\"$aksi?module=slider&act=hapus\" method=\"POST\" style=\"display:inline;\">
+									" . csrf_field() . "
+									<input type=\"hidden\" name=\"id\" value=\"$r[id_slider]\">
+									<button type=\"submit\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS SLIDER INI ?')\" title=\"Hapus Data\" style=\"background:none;border:none;padding:0;\">
+										<i class=\"fa fa-trash text-red\"></i>
+									</button>
+								</form>
 							</tr>";
 						$no++;
 					}
@@ -66,12 +73,13 @@ else{
                   <h3 class="box-title">Tambah Slider</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=slider&act=input" class="form-horizontal" enctype="multipart/form-data">
+					<?php echo csrf_field(); ?>
 					<div class="box-body">
 						<div class="form-group">
 							<label for="link" class="col-sm-2 control-label">Link Slider</label>
 							<div class="col-sm-10">
 								<input type="text" class="form-control" id="link" name="link" required />
-								<small>* Contoh : <b>http://www.lomboktimurkab.go.id</b></small>
+								<small>* Contoh : <b>http://www.jayapurakota.go.id</b></small>
 							</div>
 						</div>
 						<div class="form-group">
@@ -100,13 +108,14 @@ else{
                   <h3 class="box-title">Edit Slider</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=slider&act=update" class="form-horizontal" enctype="multipart/form-data">
+					<?php echo csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo $r['id_slider']; ?>" />
 					<div class="box-body">
 						<div class="form-group">
 							<label for="link" class="col-sm-2 control-label">Link</label>
 							<div class="col-sm-10">
 								<input type="text" class="form-control" id="link" name="link" value="<?php echo $r['link']; ?>" />
-								<small>* Contoh : <b>http://www.lomboktimurkab.go.id</b></small>
+								<small>* Contoh : <b>http://www.jayapurakota.go.id</b></small>
 							</div>
 						</div>
 						<div class="form-group">

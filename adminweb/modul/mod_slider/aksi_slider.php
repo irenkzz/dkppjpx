@@ -16,97 +16,134 @@ else{
   $act    = $_GET['act'];
 
   // Hapus slider
-  if ($module=='slider' AND $act=='hapus'){
-    $query = "SELECT gmb_slider FROM slider WHERE id_slider='$_GET[id]'";
-    $hapus = querydb($query);
-    $r     = $hapus->fetch_array();
-    
-    if ($r['gmb_slider']!=''){
-      $namafile = $r['gmb_slider'];
-      
-      // hapus filenya
-      unlink("../../../foto_slider/$namafile");   
-      unlink("../../../foto_slider/small_$namafile");   
+  if ($module === 'slider' && $act === 'hapus') {
+    require_post_csrf();
 
-      // hapus data slider di database 
-      querydb("DELETE FROM slider WHERE id_slider='$_GET[id]'");      
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if ($id <= 0) { header("location:../../media.php?module=".$module); exit; }
+
+    $stmt = $dbconnection->prepare("SELECT gmb_slider FROM slider WHERE id_slider = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->bind_result($gmb);
+    $has = $stmt->fetch();
+    $stmt->close();
+
+    $stmt = $dbconnection->prepare("DELETE FROM slider WHERE id_slider = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->close();
+
+    if ($has && !empty($gmb)) {
+        @unlink(__DIR__ . "/../../../foto_slider/" . basename($gmb));
+        @unlink(__DIR__ . "/../../../foto_slider/small_" . basename($gmb));
     }
-    else{
-      querydb("DELETE FROM slider WHERE id_slider='$_GET[id]'");      
-    }
+
     header("location:../../media.php?module=".$module);
+    exit;
   }
 
   // Input slider
-  elseif ($module=='slider' AND $act=='input'){
-    $lokasi_file = $_FILES['fupload']['tmp_name'];
-    $tipe_file   = $_FILES['fupload']['type'];
-    $nama_file   = $_FILES['fupload']['name'];
-    $acak        = rand(1,999999);
-    $nama_gambar = $acak.'-'.$nama_file; 
-    
-    $link  = $_POST['link'];
+  elseif ($module === 'slider' && $act === 'input') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
+    require_post_csrf();
 
-    // Apabila tidak ada gambar yang di upload
-    if (empty($lokasi_file)){
-          echo "<script>window.alert('Gambar belum dipilih');
-              window.location=('../../media.php?module=".$module."')</script>";
-    }
-    // Apabila ada gambar yang di upload
-    else{
-      if ($tipe_file != "image/jpeg" AND $tipe_file != "image/pjpeg"){
-        echo "<script>window.alert('Upload Gagal! Pastikan file yang di upload bertipe *.JPG');
-              window.location=('../../media.php?module=".$module."')</script>";
-      }
-      else{
-       
-        UploadSlider($nama_gambar);
-        
-        $input = "INSERT INTO slider(gmb_slider,link) VALUES('$nama_gambar','$link')";
-        querydb($input);
+    $link = trim($_POST['link'] ?? '');
 
-        header("location:../../media.php?module=".$module);
-      }
+    if (empty($_FILES['fupload']['tmp_name'])) {
+        echo "<script>window.alert('Gambar belum dipilih');
+              window.location=('../../media.php?module=".$module."')</script>";
+        exit;
     }
+
+    try {
+        $res = upload_image_secure($_FILES['fupload'], [
+            'dest_dir'     => __DIR__ . '/../../../foto_slider',
+            'thumb_max_w'  => 600,
+            'thumb_max_h'  => 300,
+            'jpeg_quality' => 85,
+            'prefix'       => 'slider_',
+            'max_size'     => 2 * 1024 * 1024,
+            'allowed_types'=> ['image/jpeg','image/png']
+        ]);
+        $nama_gambar = $res['filename'];
+    } catch (Throwable $e) {
+        echo "<script>window.alert('Upload Gagal: ". e($e->getMessage()) ."'); history.back();</script>";
+        exit;
+    }
+
+    exec_prepared(
+        "INSERT INTO slider (gmb_slider, link) VALUES (?, ?)",
+        "ss",
+        [$nama_gambar, $link]
+    );
+
+    header("location:../../media.php?module=".$module);
+    exit;
   }
 
   // Update slider
-  elseif ($module=='slider' AND $act=='update'){
-    $lokasi_file = $_FILES['fupload']['tmp_name'];
-    $tipe_file   = $_FILES['fupload']['type'];
-    $nama_file   = $_FILES['fupload']['name'];
-    $acak        = rand(1,999999);
-    $nama_gambar = $acak.'-'.$nama_file; 
-    
-    $id    = $_POST['id'];    
-    $link  = $_POST['link'];
+  elseif ($module === 'slider' && $act === 'update') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
+    require_post_csrf();
 
-    // Apabila gambar tidak diganti
-    if (empty($lokasi_file)){
-      $update = "UPDATE slider SET link      = '$link'
-                             WHERE id_slider = '$id'";
-      querydb($update);
-      
-      header("location:../../media.php?module=".$module);
-    }
-    else{
-      if ($tipe_file != "image/jpeg" AND $tipe_file != "image/pjpeg"){
-        echo "<script>window.alert('Upload Gagal! Pastikan file yang di upload bertipe *.JPG');
-              window.location=('../../media.php?module=".$module."')</script>";
-      }
-      else{
-        
-        UploadSlider($nama_gambar);
+    $id   = (int)($_POST['id'] ?? 0);
+    $link = trim($_POST['link'] ?? '');
+    if ($id <= 0) { header("location:../../media.php?module=".$module); exit; }
 
-        $update = "UPDATE slider SET gmb_slider  = '$nama_gambar',
-                                     link        = '$link' 
-                               WHERE id_slider   = '$id'";
-        querydb($update);
-      
+    $has_new = !empty($_FILES['fupload']['tmp_name']);
+
+    // no new image → update text only (prepared)
+    if (!$has_new) {
+        exec_prepared("UPDATE slider SET link = ? WHERE id_slider = ?", "si", [$link, $id]);
         header("location:../../media.php?module=".$module);
-      }
+        exit;
     }
+
+    // fetch old image name (for cleanup after successful update)
+    $old = null;
+    $stmt = $dbconnection->prepare("SELECT gmb_slider FROM slider WHERE id_slider = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->bind_result($old_gmb);
+    if ($stmt->fetch()) { $old = $old_gmb; }
+    $stmt->close();
+
+    // secure upload (size/type enforced)
+    try {
+        $res = upload_image_secure($_FILES['fupload'], [
+            'dest_dir'      => __DIR__ . '/../../../foto_slider',
+            'thumb_max_w'   => 600,
+            'thumb_max_h'   => 300,
+            'jpeg_quality'  => 85,
+            'prefix'        => 'slider_',
+            'max_size'      => 2 * 1024 * 1024,
+            'allowed_types' => ['image/jpeg', 'image/png'],
+        ]);
+        $nama_gambar = $res['filename'];
+    } catch (Throwable $e) {
+        echo "<script>window.alert('Upload Gagal: ". e($e->getMessage()) ."'); history.back();</script>";
+        exit;
+    }
+
+    // update with prepared statement
+    exec_prepared(
+        "UPDATE slider SET gmb_slider = ?, link = ? WHERE id_slider = ?",
+        "ssi",
+        [$nama_gambar, $link, $id]
+    );
+
+    // cleanup old files safely (after DB success)
+    if (!empty($old)) {
+        $base = basename($old);
+        @unlink(__DIR__ . "/../../../foto_slider/" . $base);
+        @unlink(__DIR__ . "/../../../foto_slider/small_" . $base);
+    }
+
+    header("location:../../media.php?module=".$module);
+    exit;
   }
+
   closedb();
 }
 ?>

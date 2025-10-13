@@ -100,18 +100,20 @@ else{
         UploadBanner($nama_gambar);
         */
       try {
-          $res = upload_image_secure($_FILES['fupload'], [
-              'dest_dir'     => __DIR__ . '/../../../foto_banner', // keep your existing dir
-              'thumb_max_w'  => 480,
-              'thumb_max_h'  => 320,
-              'jpeg_quality' => 85,
-              'prefix'       => 'banner_',
-              // 'preserve_alpha' => false, // uncomment to always convert to JPEG
-          ]);
-          $nama_gambar = $res['filename'];
+    $res = upload_image_secure($_FILES['fupload'], [
+        'dest_dir'      => __DIR__ . '/../../../foto_banner',
+        'thumb_max_w'   => 480,
+        'thumb_max_h'   => 320,
+        'jpeg_quality'  => 85,
+        'prefix'        => 'banner_',
+        'max_size'      => 2 * 1024 * 1024,               // ✅ enforce file size limit (2MB)
+        'allowed_types' => ['image/jpeg', 'image/png'],   // ✅ enforce MIME types
+      ]);
+        $nama_gambar = $res['filename'];
       } catch (Throwable $e) {
           echo "<script>window.alert('Upload gagal: " . e($e->getMessage()) . "'); location=history.back();</script>";
           exit;
+      }
       }
         // Prepared INSERT + gambar
         $stmt = $dbconnection->prepare("
@@ -124,18 +126,10 @@ else{
 
         header("location:../../media.php?module=".$module);
       }
-    }
-  
 
   // Update halaman statis
   elseif ($module=='halamanstatis' AND $act=='update'){
     require_post_csrf();
-    
-    $lokasi_file = $_FILES['fupload']['tmp_name'];
-    $tipe_file   = $_FILES['fupload']['type'];
-    $nama_file   = $_FILES['fupload']['name'];
-    $acak        = rand(1,99);
-    $nama_gambar = $acak.$nama_file;
      
     $id          = $_POST['id'];    
     $judul       = $_POST['judul'];
@@ -161,11 +155,13 @@ else{
       //Update dengan mengubah gambar
       try {
           $res = upload_image_secure($_FILES['fupload'], [
-              'dest_dir'     => __DIR__ . '/../../../foto_banner',
-              'thumb_max_w'  => 480,
-              'thumb_max_h'  => 320,
-              'jpeg_quality' => 85,
-              'prefix'       => 'banner_',
+              'dest_dir'      => __DIR__ . '/../../../foto_banner',
+              'thumb_max_w'   => 480,
+              'thumb_max_h'   => 320,
+              'jpeg_quality'  => 85,
+              'prefix'        => 'banner_',
+              'max_size'      => 2 * 1024 * 1024,               // ✅ enforce file size limit (2MB)
+              'allowed_types' => ['image/jpeg', 'image/png'],   // ✅ enforce MIME types
           ]);
           $nama_gambar = $res['filename'];
       } catch (Throwable $e) {

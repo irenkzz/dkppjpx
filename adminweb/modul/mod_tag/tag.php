@@ -80,6 +80,7 @@ else{
                   <h3 class="box-title">Tambah Tag Berita</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=tag&act=input" class="form-horizontal">
+					<?php csrf_field(); ?>
 					<div class="box-body">
 						<div class="form-group">
 							<label for="nama_tag" class="col-sm-2 control-label">Nama Tag</label>
@@ -106,6 +107,7 @@ else{
                   <h3 class="box-title">Edit Tag Berita</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=tag&act=update" class="form-horizontal">
+					<?php csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo $r['id_tag']; ?>">
 					<div class="box-body">
 						<div class="form-group">
