@@ -40,19 +40,55 @@ else{
                     </thead>
                     <tbody>
 					<?php
-					$query  = "SELECT * FROM gallery,album WHERE gallery.id_album = album.id_album ORDER BY id_gallery DESC";
-					$tampil = querydb($query);
-					$no=1;
-					while ($r=$tampil->fetch_array()){  
-						echo "<tr><td>$no</td>
-							<td><img src=\"../img_galeri/kecil_$r[gbr_gallery]\" width=\"100\" height=\"75\"></td>
-							<td>$r[jdl_gallery]</td>
-							<td>$r[jdl_album]</td>
-							<td align=\"center\"><a href=\"?module=galerifoto&act=editgalerifoto&id=$r[id_gallery]\"><i class=\"fa fa-pencil\"></i></a> &nbsp; <a href=\"$aksi?module=galerifoto&act=hapus&id=$r[id_gallery]\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS FOTO INI ?')\"><i class=\"fa fa-trash text-red\"></i></a></td>
-							</tr>";
-						$no++;
+					$stmt = $dbconnection->prepare("
+					SELECT g.id_gallery, g.jdl_gallery, g.gbr_gallery, a.jdl_album
+						FROM gallery g
+						JOIN album a ON g.id_album = a.id_album
+					ORDER BY g.id_gallery DESC
+					");
+					$stmt->execute();
+					if (method_exists($stmt, 'get_result')) {
+						$res = $stmt->get_result();
+						$no = 1;
+						while ($r = $res->fetch_assoc()) {
+							echo "<tr><td>$no</td>
+								<td><img src=\"../img_galeri/kecil_$r[gbr_gallery]\" width=\"100\" height=\"75\"></td>
+								<td>$r[jdl_gallery]</td>
+								<td>$r[jdl_album]</td>
+								<td align=\"center\">
+									<a href=\"?module=galerifoto&act=editgalerifoto&id=$r[id_gallery]\"><i class=\"fa fa-pencil\"></i></a> &nbsp;
+									<form action=\"$aksi?module=galerifoto&act=hapus\" method=\"POST\" style=\"display:inline\">";
+							echo csrf_field();
+							echo	"<input type=\"hidden\" name=\"id\" value=\"$r[id_gallery]\" />
+										<a href=\"#\" onclick=\"if(confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS FOTO INI ?')){ this.closest('form').submit(); } return false;\"><i class=\"fa fa-trash text-red\"></i></a>
+									</form>
+								</td>
+								</tr>";
+							$no++;
+						}
+					} else {
+						$stmt->bind_result($id_gallery, $jdl_gallery, $gbr_gallery, $jdl_album);
+						$no = 1;
+						while ($stmt->fetch()) {
+							echo "<tr><td>$no</td>
+								<td><img src=\"../img_galeri/kecil_$gbr_gallery\" width=\"100\" height=\"75\"></td>
+								<td>$jdl_gallery</td>
+								<td>$jdl_album</td>
+								<td align=\"center\">
+									<a href=\"?module=galerifoto&act=editgalerifoto&id=$id_gallery\"><i class=\"fa fa-pencil\"></i></a> &nbsp;
+									<form action=\"$aksi?module=galerifoto&act=hapus\" method=\"POST\" style=\"display:inline\">";
+							echo csrf_field();
+							echo			"<input type=\"hidden\" name=\"id\" value=\"$id_gallery\" />
+										<a href=\"#\" onclick=\"if(confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS FOTO INI ?')){ this.closest('form').submit(); } return false;\"><i class=\"fa fa-trash text-red\"></i></a>
+									</form>
+								</td>
+								</tr>";
+							$no++;
+						}
 					}
+					$stmt->close();
 					?>
+
                     </tbody>
                   </table>
                 </div><!-- /.box-body -->
@@ -67,6 +103,7 @@ else{
                   <h3 class="box-title">Tambah Galeri Foto</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=galerifoto&act=input" class="form-horizontal" enctype="multipart/form-data">
+					<?php echo csrf_field(); ?>
 					<div class="box-body">
 						<div class="form-group">
 							<label for="judul_galeri" class="col-sm-2 control-label">Judul Foto</label>
@@ -80,11 +117,20 @@ else{
 								<select class="form-control select2" id="album" name="album">
 									<option value="0" selected>- Pilih Album Photo -</option>
 									<?php
-									$query  = "SELECT * FROM album ORDER BY id_album DESC";
-									$tampil = querydb($query);
-									while($r=$tampil->fetch_array()){
-										echo "<option value=\"$r[id_album]\">$r[jdl_album]</option>";
+									$stmt = $dbconnection->prepare("SELECT id_album, jdl_album FROM album ORDER BY id_album DESC");
+									$stmt->execute();
+									if (method_exists($stmt, 'get_result')) {
+										$res = $stmt->get_result();
+										while($r = $res->fetch_assoc()){
+											echo "<option value=\"$r[id_album]\">$r[jdl_album]</option>";
+										}
+									} else {
+										$stmt->bind_result($id_album, $jdl_album);
+										while($stmt->fetch()){
+											echo "<option value=\"$id_album\">$jdl_album</option>";
+										}
 									}
+									$stmt->close();
 									?>
 								</select>
 							</div>
@@ -112,16 +158,27 @@ else{
 	break;
 	
 	case "editgalerifoto":
-      $query = "SELECT * FROM gallery WHERE id_gallery='$_GET[id]'";
-      $hasil = querydb($query);
-
-      $r = $hasil->fetch_array();
+		$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+		$stmt = $dbconnection->prepare("SELECT * FROM gallery WHERE id_gallery = ?");
+		$stmt->bind_param("i", $id);
+		$stmt->execute();
+		if (method_exists($stmt, 'get_result')) {
+			$res = $stmt->get_result();
+			$r = $res->fetch_array();
+		} else {
+			$stmt->bind_result($id_gallery, $jdl_gallery, $gallery_seo, $id_album, $keterangan, $gbr_gallery);
+			$r = $stmt->fetch()
+				? ['id_gallery'=>$id_gallery,'jdl_gallery'=>$jdl_gallery,'gallery_seo'=>$gallery_seo,'id_album'=>$id_album,'keterangan'=>$keterangan,'gbr_gallery'=>$gbr_gallery]
+				: null;
+		}
+		$stmt->close();
 ?>
 			<div class="box">
                 <div class="box-header with-border">
                   <h3 class="box-title">Edit Galeri Foto</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=galerifoto&act=update" class="form-horizontal" enctype="multipart/form-data">
+					<?php echo csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo $r['id_gallery']; ?>" />
 					<div class="box-body">
 						<div class="form-group">
@@ -138,15 +195,28 @@ else{
 									<option value="0" selected>- Pilih Album Photo -</option>
 									<?php
 									}
-									$query2  = "SELECT * FROM album ORDER BY id_album DESC";
-									$tampil2 = querydb($query2);
-									while($w=$tampil2->fetch_array()){
-										if ($r['id_album']==$w['id_album']){
-											echo "<option value=\"$w[id_album]\" selected>$w[jdl_album]</option>";
-										} else {
-											echo "<option value=\"$w[id_album]\">$w[jdl_album]</option>";
+									$stmt2 = $dbconnection->prepare("SELECT id_album, jdl_album FROM album ORDER BY id_album DESC");
+									$stmt2->execute();
+									if (method_exists($stmt2, 'get_result')) {
+										$res2 = $stmt2->get_result();
+										while ($w = $res2->fetch_assoc()) {
+											if ($r['id_album'] == $w['id_album']){
+												echo "<option value=\"$w[id_album]\" selected>$w[jdl_album]</option>";
+											} else {
+												echo "<option value=\"$w[id_album]\">$w[jdl_album]</option>";
+											}
+										}
+									} else {
+										$stmt2->bind_result($id_album2, $jdl_album2);
+										while ($stmt2->fetch()) {
+											if ($r['id_album'] == $id_album2){
+												echo "<option value=\"$id_album2\" selected>$jdl_album2</option>";
+											} else {
+												echo "<option value=\"$id_album2\">$jdl_album2</option>";
+											}
 										}
 									}
+									$stmt2->close();
 									?>
 								</select>
 							</div>

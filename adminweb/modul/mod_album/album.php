@@ -39,18 +39,34 @@ else{
                     </thead>
                     <tbody>
 					<?php
-					$query  = "SELECT * FROM album ORDER BY id_album DESC";
-					$tampil = querydb($query);
-					$no=1;
-					while ($r=$tampil->fetch_array()){  
-						echo "<tr><td>$no</td>
-							<td>$r[jdl_album]</td>
-							<td align=\"center\">$r[aktif]</td>
-							<td align=\"center\"><a href=\"?module=album&act=editalbum&id=$r[id_album]\"><i class=\"fa fa-pencil\"></i></a></td>
-							</tr>";
-						$no++;
+					$stmt = $dbconnection->prepare("SELECT id_album, jdl_album, aktif FROM album ORDER BY id_album DESC");
+					$stmt->execute();
+					if (method_exists($stmt, 'get_result')) {
+						$res = $stmt->get_result();
+						$no = 1;
+						while ($r = $res->fetch_assoc()) {
+							echo "<tr><td>$no</td>
+								<td>$r[jdl_album]</td>
+								<td align=\"center\">$r[aktif]</td>
+								<td align=\"center\"><a href=\"?module=album&act=editalbum&id=$r[id_album]\"><i class=\"fa fa-pencil\"></i></a></td>
+								</tr>";
+							$no++;
+						}
+					} else {
+						$stmt->bind_result($id_album, $jdl_album, $aktif);
+						$no = 1;
+						while ($stmt->fetch()) {
+							echo "<tr><td>$no</td>
+								<td>$jdl_album</td>
+								<td align=\"center\">$aktif</td>
+								<td align=\"center\"><a href=\"?module=album&act=editalbum&id=$id_album\"><i class=\"fa fa-pencil\"></i></a></td>
+								</tr>";
+							$no++;
+						}
 					}
+					$stmt->close();
 					?>
+
                     </tbody>
                   </table>
                 </div><!-- /.box-body -->
@@ -68,6 +84,7 @@ else{
                   <h3 class="box-title">Tambah Album Photo</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=album&act=input" class="form-horizontal" enctype="multipart/form-data">
+					<?php echo csrf_field(); ?>
 					<div class="box-body">
 						<div class="form-group">
 							<label for="nama_album" class="col-sm-2 control-label">Judul Album</label>
@@ -91,16 +108,28 @@ else{
 	break;
 	
 	case "editalbum":
-      $query = "SELECT * FROM album WHERE id_album='$_GET[id]'";
-      $hasil = querydb($query);
-
-      $r = $hasil->fetch_array();
+      
+		$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+		$stmt = $dbconnection->prepare("SELECT * FROM album WHERE id_album = ?");
+		$stmt->bind_param("i", $id);
+		$stmt->execute();
+		if (method_exists($stmt, 'get_result')) {
+			$res = $stmt->get_result();
+			$r = $res->fetch_array();
+		} else {
+			$stmt->bind_result($id_album, $jdl_album, $album_seo, $gbr_album, $aktif);
+			$r = $stmt->fetch()
+				? ['id_album'=>$id_album,'jdl_album'=>$jdl_album,'album_seo'=>$album_seo,'gbr_album'=>$gbr_album,'aktif'=>$aktif]
+				: null;
+		}
+		$stmt->close();
 ?>
 			<div class="box">
                 <div class="box-header with-border">
                   <h3 class="box-title">Edit Album</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=album&act=update" class="form-horizontal" enctype="multipart/form-data">
+					<?php echo csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo $r['id_album']; ?>" />
 					<div class="box-body">
 						<div class="form-group">

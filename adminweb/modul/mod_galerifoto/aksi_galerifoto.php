@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/../../includes/bootstrap.php';
 
 // Apabila user belum login
 if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
@@ -7,9 +7,8 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-  include "../../../config/koneksi.php";
   include "../../../config/fungsi_seo.php";
-  include "../../../config/fungsi_thumb.php";
+  require_once __DIR__ . '/../../includes/upload_helpers.php';
   opendb();
 
   $module = $_GET['module'];
@@ -17,134 +16,150 @@ else{
 
   // Hapus galeri foto
   if ($module=='galerifoto' AND $act=='hapus'){
-    // cari informasi nama file foto yang ada di tabel galeri
-    $query = "SELECT gbr_gallery FROM gallery WHERE id_gallery='$_GET[id]'";
-    $hapus = querydb($query);
-    $r     = $hapus->fetch_array();
-    
-    // kalau ada file fotonya
-    if ($r['gbr_gallery']!=''){
-      $namafile = $r['gbr_gallery'];
-      
-      // hapus file foto yang berhubungan dengan galeri tersebut
-      unlink("../../../img_galeri/$namafile");   
-      unlink("../../../img_galeri/kecil_$namafile");   
+    require_post_csrf();
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if ($id <= 0) { 
+      header("location:../../media.php?module=".$module); 
+      exit; 
+    }
 
-      // kemudian baru hapus data galeri di database 
-      querydb("DELETE FROM gallery WHERE id_gallery='$_GET[id]'");      
+    // fetch filename (prepared)
+    $stmt = $dbconnection->prepare("SELECT gbr_gallery FROM gallery WHERE id_gallery = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->bind_result($gbr);
+    $has = $stmt->fetch();
+    $stmt->close();
+
+    // delete row (prepared)
+    $stmt = $dbconnection->prepare("DELETE FROM gallery WHERE id_gallery = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->close();
+
+    // unlink files safely
+    if ($has && !empty($gbr)) {
+      $base = basename($gbr);
+      @unlink(__DIR__ . "/../../../img_galeri/" . $base);
+      @unlink(__DIR__ . "/../../../img_galeri/kecil_" . $base);
     }
-    // kalau tidak ada file fotonya
-    else{
-      querydb("DELETE FROM gallery WHERE id_gallery='$_GET[id]'");
-    }
+
     header("location:../../media.php?module=".$module);
+    exit;
   }
-
 
   // Input galeri foto
   elseif ($module=='galerifoto' AND $act=='input'){
-    $lokasi_file = $_FILES['fupload']['tmp_name'];
-    $tipe_file   = $_FILES['fupload']['type'];
-    $nama_file   = $_FILES['fupload']['name'];
-    $acak        = rand(1,99);
-    $nama_foto   = $acak.$nama_file; 
-  
+    require_post_csrf();
+
     $judul_galeri = $_POST['judul_galeri'];
     $galeri_seo   = seo_title($_POST['judul_galeri']);
     $album        = $_POST['album'];
     $keterangan   = $_POST['keterangan'];
 
-    // Apabila tidak ada foto yang di upload
-    if (empty($lokasi_file)){
-      $input = "INSERT INTO gallery(jdl_gallery, 
-                                   gallery_seo,
-                                   id_album, 
-                                   keterangan) 
-                            VALUES('$judul_galeri', 
-                                   '$galeri_seo',
-                                   '$album',
-                                   '$keterangan')";
-      querydb($input);
+    $has_file = !empty($_FILES['fupload']['tmp_name']);
 
+    if (!$has_file){
+      // prepared insert (no image)
+      $stmt = $dbconnection->prepare("
+        INSERT INTO gallery (jdl_gallery, gallery_seo, id_album, keterangan)
+        VALUES (?, ?, ?, ?)
+      ");
+      $stmt->bind_param("ssis", $judul_galeri, $galeri_seo, $album, $keterangan);
+      $stmt->execute();
+      $stmt->close();
       header("location:../../media.php?module=".$module);
-    }
-    // Apabila ada foto yang di upload
-    else{
-      if ($tipe_file != "image/jpeg" AND $tipe_file != "image/pjpeg"){
-        echo "<script>window.alert('Upload Gagal! Pastikan file yang di upload bertipe *.JPG');
-              window.location=('../../media.php?module=galerifoto')</script>";
+    } else {
+      // secure upload → img_galeri + kecil_ thumbnail
+      try {
+        $res = upload_image_secure($_FILES['fupload'], [
+          'dest_dir'     => __DIR__ . '/../../../img_galeri',
+          'thumb_max_w'  => 180,
+          'thumb_max_h'  => 180,
+          'jpeg_quality' => 85,
+          'prefix'       => 'galeri_',
+        ]);
+        $nama_foto = $res['filename'];
+      } catch (Throwable $e) {
+        echo "<script>window.alert('Upload Gagal: " . e($e->getMessage()) . "'); window.location=('../../media.php?module=galerifoto')</script>";
+        exit;
       }
-      else{
-        //$folder = "../../../foto_galeri/"; // folder untuk foto galeri
-        //$ukuran = 180;                     // foto diperkecil jadi 180px (thumb)
-        //UploadFoto($nama_foto, $folder, $ukuran);
-		UploadGallery($nama_foto);
-        
-        $input = "INSERT INTO gallery(jdl_gallery, 
-                                     gallery_seo,
-                                     id_album, 
-                                     keterangan,
-                                     gbr_gallery) 
-                              VALUES('$judul_galeri', 
-                                     '$galeri_seo',
-                                     '$album',
-                                     '$keterangan',
-                                     '$nama_foto')";
-        querydb($input);
 
-        header("location:../../media.php?module=".$module);
-      }
+      $stmt = $dbconnection->prepare("
+        INSERT INTO gallery (jdl_gallery, gallery_seo, id_album, keterangan, gbr_gallery)
+        VALUES (?, ?, ?, ?, ?)
+      ");
+      $stmt->bind_param("ssiss", $judul_galeri, $galeri_seo, $album, $keterangan, $nama_foto);
+      $stmt->execute();
+      $stmt->close();
+      header("location:../../media.php?module=".$module);
     }
   }
 
   // Update galeri foto
   elseif ($module=='galerifoto' AND $act=='update'){
-    $lokasi_file    = $_FILES['fupload']['tmp_name'];
-    $tipe_file      = $_FILES['fupload']['type'];
-    $nama_file      = $_FILES['fupload']['name'];
-    $acak           = rand(1,99);
-    $nama_foto      = $acak.$nama_file; 
+    require_post_csrf();
 
-    $id           = $_POST['id'];
+    $id           = (int)$_POST['id'];
     $judul_galeri = $_POST['judul_galeri'];
     $galeri_seo   = seo_title($_POST['judul_galeri']);
     $album        = $_POST['album'];
     $keterangan   = $_POST['keterangan'];
 
-    // Apabila foto tidak diganti
-    if(empty($lokasi_file)){
-      $update = "UPDATE gallery SET jdl_gallery = '$judul_galeri',
-                                   gallery_seo   = '$galeri_seo', 
-                                   id_album     = '$album',
-                                   keterangan   = '$keterangan' 
-                             WHERE id_gallery    = '$id'";
-      querydb($update);
-      
+    $has_new = !empty($_FILES['fupload']['tmp_name']);
+    if (!$has_new) {
+      // prepared update (no image change)
+      $stmt = $dbconnection->prepare("
+        UPDATE gallery SET jdl_gallery = ?, gallery_seo = ?, id_album = ?, keterangan = ? WHERE id_gallery = ?
+      ");
+      $stmt->bind_param("ssisi", $judul_galeri, $galeri_seo, $album, $keterangan, $id);
+      $stmt->execute();
+      $stmt->close();
+      header("location:../../media.php?module=".$module);
+    } else {
+      // upload new image securely
+      try {
+        $res = upload_image_secure($_FILES['fupload'], [
+          'dest_dir'     => __DIR__ . '/../../../img_galeri',
+          'thumb_max_w'  => 180,
+          'thumb_max_h'  => 180,
+          'jpeg_quality' => 85,
+          'prefix'       => 'galeri_',
+        ]);
+        $nama_foto = $res['filename'];
+      } catch (Throwable $e) {
+        echo "<script>window.alert('Upload Gagal: " . e($e->getMessage()) . "'); window.location=('../../media.php?module=galerifoto')</script>";
+        exit;
+      }
+
+      // fetch old file for cleanup post-update
+      $old = null;
+      $stmt = $dbconnection->prepare("SELECT gbr_gallery FROM gallery WHERE id_gallery = ?");
+      $stmt->bind_param("i", $id);
+      $stmt->execute();
+      $stmt->bind_result($old_gbr);
+      if ($stmt->fetch()) $old = $old_gbr;
+      $stmt->close();
+
+      // prepared update with new filename
+      $stmt = $dbconnection->prepare("
+        UPDATE gallery SET jdl_gallery = ?, gallery_seo = ?, id_album = ?, keterangan = ?, gbr_gallery = ? WHERE id_gallery = ?
+      ");
+      $stmt->bind_param("ssissi", $judul_galeri, $galeri_seo, $album, $keterangan, $nama_foto, $id);
+      $stmt->execute();
+      $stmt->close();
+
+      // cleanup old files (best-effort)
+      if (!empty($old)) {
+        $base = basename($old);
+        @unlink(__DIR__ . "/../../../img_galeri/" . $base);
+        @unlink(__DIR__ . "/../../../img_galeri/kecil_" . $base);
+      }
+
       header("location:../../media.php?module=".$module);
     }
-    else{
-      if($tipe_file != "image/jpeg" AND $tipe_file != "image/pjpeg"){
-        echo "<script>window.alert('Upload Gagal! Pastikan file yang di upload bertipe *.JPG'); window.location=('../../media.php?module=galerifoto')</script>";
-		
-      }
-      else{
-        //$folder = "../../../foto_galeri/"; // folder untuk foto galeri
-        //$ukuran = 180;                     // foto diperkecil jadi 180px (thumb)
-        //UploadFoto($nama_foto, $folder, $ukuran);
-		UploadGallery($nama_foto);
-
-        $update = "UPDATE gallery SET jdl_gallery = '$judul_galeri',
-                                     gallery_seo   = '$galeri_seo', 
-                                     id_album     = '$album',
-                                     keterangan   = '$keterangan', 
-                                     gbr_gallery         = '$nama_foto' 
-                               WHERE id_gallery    = '$id'";
-        querydb($update);
-      
-        header("location:../../media.php?module=".$module);
-      }
-    }
   }
+
   closedb();
 }
 ?>
