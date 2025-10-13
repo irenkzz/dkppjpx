@@ -1,14 +1,17 @@
 <?php
 session_start();
 include_once __DIR__ . "/../../../config/koneksi.php";
-include_once __DIR__ . "/../../../config/library.php"; 
-include "../../../config/fungsi_seo.php";// for seo_title()
+include_once __DIR__ . "/../../../config/library.php";
+include_once __DIR__ . "/../../../config/fungsi_seo.php"; // for seo_title()
+include_once __DIR__ . "/../../includes/bootstrap.php";   // adds require_post_csrf(), csrf_field(), e(), etc.
 opendb();
 
 $module  = $_GET['module'] ?? '';
 $act     = $_GET['act'] ?? '';
 
 if ($module == 'tag' && $act == 'input') {
+    require_post_csrf();
+
     $nama_tag = trim($_POST['nama_tag'] ?? '');
     $tag_seo  = seo_title($nama_tag);
     $pilihan  = trim($_POST['pilihan'] ?? 'N');
@@ -25,6 +28,8 @@ if ($module == 'tag' && $act == 'input') {
 }
 
 if ($module == 'tag' && $act == 'update') {
+    require_post_csrf();
+
     $id        = (int) ($_POST['id'] ?? 0);
     $nama_tag  = trim($_POST['nama_tag'] ?? '');
     $tag_seo   = seo_title($nama_tag);
@@ -42,7 +47,9 @@ if ($module == 'tag' && $act == 'update') {
 }
 
 if ($module == 'tag' && $act == 'hapus') {
-    $id = (int) ($_GET['id'] ?? 0);
+    require_post_csrf();
+
+    $id = (int) ($_POST['id'] ?? 0);
     if ($id > 0) {
         exec_prepared("DELETE FROM tag WHERE id_tag = ?", "i", [$id]);
     }

@@ -38,18 +38,30 @@ else{
                     </thead>
                     <tbody>
 					<?php
-					$query  = "SELECT * FROM tag ORDER BY id_tag DESC";
-					$tampil = querydb($query);
-					$no=1;
-					while ($r=$tampil->fetch_array()){  
-						echo "<tr><td class=\"text-center\">$no</td>
-								<td>$r[nama_tag]</td>
-								<td class=\"text-center\">$r[pilihan]</td>
-								<td class=\"text-center\"><a href=\"?module=tag&act=edittag&id=$r[id_tag]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp; 
-								<a href=\"$aksi?module=tag&act=hapus&id=$r[id_tag]\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS TAG INI ?')\" title=\"Hapus Data\"><i class=\"fa fa-trash text-red\"></i></a></td>
-								</tr>";
+					$stmt = $dbconnection->prepare("SELECT id_tag, nama_tag, pilihan FROM tag ORDER BY id_tag DESC");
+					$stmt->execute();
+					$result = $stmt->get_result();
+
+					$no = 1;
+					while ($r = $result->fetch_assoc()) {
+						echo '<tr>';
+						echo '  <td class="text-center">'.$no.'</td>';
+						echo '  <td>'.e($r['nama_tag']).'</td>';
+						echo '  <td class="text-center">'.e($r['pilihan']).'</td>';
+						echo '  <td class="text-center">';
+						echo '    <a href="?module=tag&act=edittag&id='.$r['id_tag'].'" title="Edit Data"><i class="fa fa-pencil"></i></a> &nbsp;';
+						echo '    <form method="POST" action="'.$aksi.'?module=tag&act=hapus" style="display:inline" onsubmit="return confirm(\'APAKAH ANDA YAKIN AKAN MENGHAPUS TAG INI ?\')">';
+						csrf_field();
+						echo '      <input type="hidden" name="id" value="'.(int)$r['id_tag'].'">';
+						echo '      <button type="submit" class="btn btn-link" title="Hapus Data" style="padding:0;border:none;background:transparent">';
+						echo '        <i class="fa fa-trash text-red"></i>';
+						echo '      </button>';
+						echo '    </form>';
+						echo '  </td>';
+						echo '</tr>';
 						$no++;
 					}
+					$stmt->close();
 					?>
                     </tbody>
                   </table>
