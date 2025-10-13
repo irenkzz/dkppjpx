@@ -60,7 +60,7 @@ else{
 						<label for="alamat_website" class="col-sm-3 control-label">Alamat Website</label>
 						<div class="col-sm-9">
 							<input type="text" class="form-control" id="alamat_website" name="alamat_website" value="<?php echo $r['alamat_website']; ?>" />
-							<small> Apabila website sudah di online-kan, ganti dengan nama domain website Anda. Contoh: http://namadinas.lomboktimurkab.go.id</small>
+							<small> Apabila website sudah di online-kan, ganti dengan nama domain website Anda. Contoh: http://namadinas.jayapurakota.go.id</small>
 						</div>
 					</div>
 					<div class="form-group">
