@@ -43,11 +43,25 @@ else{
 					$tampil = querydb($query);
 					$no=1;
 					while ($r=$tampil->fetch_array()){  
-						echo "<tr><td>$no</td>
-							<td>$r[judul_video]</td>
-							<td>http://www.youtube.com/watch?v=$r[link_youtube]</td>
-							<td align=\"center\"><a href=\"?module=video&act=editvideo&id=$r[id_video]\"><i class=\"fa fa-pencil\"></i></a> &nbsp; <a href=\"$aksi?module=video&act=hapus&id=$r[id_video]\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS VIDEO INI ?')\"><i class=\"fa fa-trash text-red\"></i></a></td>
-							</tr>";
+						echo '<tr>';
+						echo '  <td>' . $no . '</td>';
+						echo '  <td>' . e($r['judul_video']) . '</td>';
+						echo '  <td>http://www.youtube.com/watch?v=' . e($r['link_youtube']) . '</td>';
+						echo '  <td align="center">';
+						echo '    <a href="?module=video&act=editvideo&id=' . (int)$r['id_video'] . '" title="Edit Video">';
+						echo '      <i class="fa fa-pencil"></i>';
+						echo '    </a> &nbsp;';
+						echo '    <form method="POST" action="' . $aksi . '?module=video&act=hapus" style="display:inline"';
+						echo '          onsubmit="return confirm(\'APAKAH ANDA YAKIN AKAN MENGHAPUS VIDEO INI ?\')">';
+						csrf_field();
+						echo '      <input type="hidden" name="id" value="' . (int)$r['id_video'] . '">';
+						echo '      <button type="submit" class="btn btn-link" title="Hapus Video"';
+						echo '              style="padding:0;border:none;background:transparent">';
+						echo '        <i class="fa fa-trash text-red"></i>';
+						echo '      </button>';
+						echo '    </form>';
+						echo '  </td>';
+						echo '</tr>';
 						$no++;
 					}
 					?>

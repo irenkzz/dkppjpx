@@ -48,9 +48,9 @@ else{
 							<td><img src=\"../foto_slider/small_$r[gmb_slider]\"></td>
 							<td><a href=\"$r[link]\" target=\"_blank\">$r[link]</a></td>
 							<td align=\"center\"><a href=\"?module=slider&act=editslider&id=$r[id_slider]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp;
-							 	<form action=\"$aksi?module=slider&act=hapus\" method=\"POST\" style=\"display:inline;\">
-									" . csrf_field() . "
-									<input type=\"hidden\" name=\"id\" value=\"$r[id_slider]\">
+							 	<form action=\"$aksi?module=slider&act=hapus\" method=\"POST\" style=\"display:inline;\">";
+						echo csrf_field();
+						echo	"<input type=\"hidden\" name=\"id\" value=\"$r[id_slider]\">
 									<button type=\"submit\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS SLIDER INI ?')\" title=\"Hapus Data\" style=\"background:none;border:none;padding:0;\">
 										<i class=\"fa fa-trash text-red\"></i>
 									</button>

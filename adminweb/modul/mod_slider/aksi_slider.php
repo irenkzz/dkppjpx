@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/../../includes/bootstrap.php';
 // Apabila user belum login
 if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
   echo "<link href=\"../../css/style_login.css\" rel=\"stylesheet\" type=\"text/css\" />
@@ -8,8 +8,8 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-  include "../../../config/koneksi.php";
-  include "../../../config/fungsi_thumb.php";
+  include "../../../config/fungsi_seo.php";
+  require_once __DIR__ . '/../../includes/upload_helpers.php';
   opendb();
 
   $module = $_GET['module'];
@@ -84,7 +84,10 @@ else{
 
   // Update slider
   elseif ($module === 'slider' && $act === 'update') {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') { http_response_code(405); exit; }
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') { 
+        http_response_code(405); 
+        exit; 
+    }
     require_post_csrf();
 
     $id   = (int)($_POST['id'] ?? 0);

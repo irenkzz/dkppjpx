@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/../../includes/bootstrap.php';
 // Apabila user belum login
 if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 	echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location = '../../index.php'</script>";
@@ -16,129 +16,144 @@ else{
 
   // Hapus video
   if ($module=='video' AND $act=='hapus'){
-    $query = "SELECT gambar FROM video WHERE id_video='$_GET[id]'";
-    $hapus = querydb($query);
-    $r     = $hapus->fetch_array();
-    
-    if ($r['gambar']!=''){
-      $namafile = $r['gambar'];
-      
-      // hapus filenya
-      unlink("../../../foto_video/$namafile");   
-      unlink("../../../foto_video/small_$namafile");   
+    require_once __DIR__ . '/../../includes/bootstrap.php';
+    require_post_csrf();
 
-      // hapus data video di database 
-      $query2 = "DELETE FROM video WHERE id_video='$_GET[id]'";
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if ($id <= 0) { header("location:../../media.php?module=".$module); exit; }
+
+    // fetch filename (prepared)
+    $stmt = $dbconnection->prepare("SELECT gambar FROM video WHERE id_video = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->bind_result($gambar);
+    $has = $stmt->fetch();
+    $stmt->close();
+
+    // delete row (prepared)
+    $stmt = $dbconnection->prepare("DELETE FROM video WHERE id_video = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->close();
+
+    // unlink files safely
+    if ($has && !empty($gambar)) {
+      $base = basename($gambar);
+      @unlink(__DIR__ . "/../../../foto_video/$base");
+      @unlink(__DIR__ . "/../../../foto_video/small_$base");
     }
-    else{
-      $query2 = "DELETE FROM video WHERE id_video='$_GET[id]'";
-    }
-	querydb($query2);
+
     header("location:../../media.php?module=".$module);
   }
 
+
   // Input video
   elseif ($module=='video' AND $act=='input'){
-    $lokasi_file = $_FILES['fupload']['tmp_name'];
-    $nama_file   = $_FILES['fupload']['name'];
-    $tipe_file   = $_FILES['fupload']['type'];
-    $acak        = rand(1,99);
-    $nama_gambar = $acak.$nama_file; 
+    require_once __DIR__ . '/../../includes/bootstrap.php';
+    require_once __DIR__ . '/../../includes/upload_helpers.php';
+    require_post_csrf();
 
     $judul_video  = $_POST['judul_video'];
     $video_seo    = seo_title($_POST['judul_video']);
-    $deskripsi    = $_POST['deskripsi']; 
-    $link_youtube = explode("watch?v=",$_POST['link_youtube']);
-    
-    // Apabila tidak ada gambar yang di upload
-    if (empty($lokasi_file)){
-      $input = "INSERT INTO video(judul_video, 
-                                  video_seo,
-                                  link_youtube, 
-                                  deskripsi) 
-	                        VALUES('$judul_video',
-                                 '$video_seo', 
-                                 '$link_youtube[1]', 
-                                 '$deskripsi')";
-      querydb($input);
+    $deskripsi    = $_POST['deskripsi'];
+    $yt_in        = trim($_POST['link_youtube']);
+    $parts        = explode('watch?v=', $yt_in, 2);
+    $yt_code      = isset($parts[1]) ? $parts[1] : $yt_in;
+
+    $has_file = !empty($_FILES['fupload']['tmp_name']);
+
+    if (!$has_file){
+      $stmt = $dbconnection->prepare("INSERT INTO video (judul_video, video_seo, link_youtube, deskripsi) VALUES (?, ?, ?, ?)");
+      $stmt->bind_param("ssss", $judul_video, $video_seo, $yt_code, $deskripsi);
+      $stmt->execute();
+      $stmt->close();
+      header("location:../../media.php?module=".$module);
+    } else {
+      try {
+        $res = upload_image_secure($_FILES['fupload'], [
+          'dest_dir'     => __DIR__ . '/../../../foto_video',
+          'thumb_max_w'  => 180,
+          'thumb_max_h'  => 180,
+          'jpeg_quality' => 85,
+          'prefix'       => 'video_',
+        ]);
+        $nama_gambar = $res['filename'];
+      } catch (Throwable $e) {
+        echo "<script>window.alert('Upload Gagal: " . e($e->getMessage()) . "'); window.location='../../media.php?module=video';</script>";
+        exit;
+      }
+
+      $stmt = $dbconnection->prepare("INSERT INTO video (judul_video, video_seo, link_youtube, deskripsi, gambar) VALUES (?, ?, ?, ?, ?)");
+      $stmt->bind_param("sssss", $judul_video, $video_seo, $yt_code, $deskripsi, $nama_gambar);
+      $stmt->execute();
+      $stmt->close();
       header("location:../../media.php?module=".$module);
     }
-    // Apabila ada gambar yang di upload
-    else{
-      if ($tipe_file != "image/jpeg" AND $tipe_file != "image/pjpeg"){
-        echo "<script>window.alert('Upload Gagal! Pastikan file yang di upload bertipe *.JPG');
-              window.location=('../../media.php?module=album')</script>";
-      }
-      else{
-        $folder = "../../../foto_video/"; // folder untuk gambar video
-        $ukuran = 180;                    // gambar diperkecil jadi 180px (thumb)
-        UploadFoto($nama_gambar, $folder, $ukuran);
-        
-        $input = "INSERT INTO video(judul_video,
-                                    video_seo,  
-                                    link_youtube, 
-                                    deskripsi,
-                                    gambar) 
-	                          VALUES('$judul_video',
-                                   '$video_seo', 
-                                   '$link_youtube[1]', 
-                                   '$deskripsi',
-                                   '$nama_gambar')";
-        querydb($input);
-
-        header("location:../../media.php?module=".$module);
-      }
-    }
   }
+
 
   // Update video
   elseif ($module=='video' AND $act=='update'){
-    $lokasi_file = $_FILES['fupload']['tmp_name'];
-    $nama_file   = $_FILES['fupload']['name'];
-    $tipe_file   = $_FILES['fupload']['type'];
-    $acak        = rand(1,99);
-    $nama_gambar = $acak.$nama_file; 
+    require_once __DIR__ . '/../../includes/bootstrap.php';
+    require_once __DIR__ . '/../../includes/upload_helpers.php';
+    require_post_csrf();
 
-    $id           = $_POST['id'];
-    $judul_video  = $_POST['judul_video']; 
+    $id           = (int)$_POST['id'];
+    $judul_video  = $_POST['judul_video'];
     $video_seo    = seo_title($_POST['judul_video']);
     $deskripsi    = $_POST['deskripsi'];
-    $link_youtube = explode("watch?v=",$_POST['link_youtube']);
+    $yt_in        = trim($_POST['link_youtube']);
+    $parts        = explode('watch?v=', $yt_in, 2);
+    $yt_code      = isset($parts[1]) ? $parts[1] : $yt_in;
 
-    // Apabila gambar tidak diganti
-    if (empty($lokasi_file)){ 
-      $update = "UPDATE video SET judul_video  = '$judul_video',
-                                  video_seo    = '$video_seo',
-                                  link_youtube = '$link_youtube[1]',
-                                  deskripsi    = '$deskripsi'   
-                            WHERE id_video     = '$id'";
-      querydb($update);
+    $has_new = !empty($_FILES['fupload']['tmp_name']);
+    if (!$has_new) {
+      $stmt = $dbconnection->prepare("UPDATE video SET judul_video = ?, video_seo = ?, link_youtube = ?, deskripsi = ? WHERE id_video = ?");
+      $stmt->bind_param("ssssi", $judul_video, $video_seo, $yt_code, $deskripsi, $id);
+      $stmt->execute();
+      $stmt->close();
+      header("location:../../media.php?module=".$module);
+    } else {
+      try {
+        $res = upload_image_secure($_FILES['fupload'], [
+          'dest_dir'     => __DIR__ . '/../../../foto_video',
+          'thumb_max_w'  => 180,
+          'thumb_max_h'  => 180,
+          'jpeg_quality' => 85,
+          'prefix'       => 'video_',
+        ]);
+        $nama_gambar = $res['filename'];
+      } catch (Throwable $e) {
+        echo "<script>window.alert('Upload Gagal: " . e($e->getMessage()) . "'); window.location='../../media.php?module=video';</script>";
+        exit;
+      }
+
+      // fetch old filename
+      $old = null;
+      $stmt = $dbconnection->prepare("SELECT gambar FROM video WHERE id_video = ?");
+      $stmt->bind_param("i", $id);
+      $stmt->execute();
+      $stmt->bind_result($old_gbr);
+      if ($stmt->fetch()) $old = $old_gbr;
+      $stmt->close();
+
+      // update with new file
+      $stmt = $dbconnection->prepare("UPDATE video SET judul_video = ?, video_seo = ?, link_youtube = ?, deskripsi = ?, gambar = ? WHERE id_video = ?");
+      $stmt->bind_param("sssssi", $judul_video, $video_seo, $yt_code, $deskripsi, $nama_gambar, $id);
+      $stmt->execute();
+      $stmt->close();
+
+      // cleanup old files
+      if (!empty($old)) {
+        $base = basename($old);
+        @unlink(__DIR__ . "/../../../foto_video/$base");
+        @unlink(__DIR__ . "/../../../foto_video/small_$base");
+      }
+
       header("location:../../media.php?module=".$module);
     }
-    else{
-      if ($tipe_file != "image/jpeg" AND $tipe_file != "image/pjpeg"){
-        echo "<script>window.alert('Upload Gagal! Pastikan file yang di upload bertipe *.JPG');
-              window.location=('../../media.php?module=video)</script>";
-      }
-      else{
-        $folder = "../../../foto_video/"; // folder untuk gambar video
-        $ukuran = 180;                    // gambar diperkecil jadi 180px (thumb)
-        UploadFoto($nama_gambar, $folder, $ukuran);
-
-        $update = "UPDATE video SET judul_video  = '$judul_video',
-                                    video_seo    = '$video_seo',
-                                    link_youtube = '$link_youtube[1]',
-                                    deskripsi    = '$deskripsi',   
-                                    gambar       = '$nama_gambar' 
-                              WHERE id_video     = '$id'";
-  
-        querydb($update);
-      
-        header("location:../../media.php?module=".$module);
-      }
-    } 
-    
   }
+
   closedb();
 }
 ?>
