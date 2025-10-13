@@ -6,51 +6,52 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-  include "../../../config/koneksi.php";
-  include "../../../config/fungsi_seo.php";
+  require_once __DIR__ . '/../../includes/bootstrap.php';
   include "../../../config/library.php";
   opendb();
-  
-	function ubah_tgl($tglnyo){
-		$fm=explode('/',$tglnyo);
-		$tahun=$fm[2];
-		$bulan=$fm[1];
-		$tgll=$fm[0];
-		
-		$sekarang=$tahun."-".$bulan."-".$tgll;
-		return $sekarang;
-	}
   $module = $_GET['module'];
   $act    = $_GET['act'];
 
   // Hapus sekilasinfo
   if ($module=='sekilasinfo' AND $act=='hapus'){
-      querydb("DELETE FROM sekilasinfo WHERE id_sekilas='$_GET[id]'");
-	  header("location:../../media.php?module=".$module);
+      require_post_csrf();
+      $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+      if ($id > 0) {
+          exec_prepared("DELETE FROM sekilasinfo WHERE id_sekilas = ?", "i", [$id]);
+      }
+      header("location:../../media.php?module=".$module);
+      exit;
   }
 
   // Input sekilasinfo
   elseif ($module=='sekilasinfo' AND $act=='input'){
+    require_post_csrf();
     $info  = $_POST['info'];
-    
-      $input = "INSERT INTO sekilasinfo(info,
-								                        tgl_posting) 
-                           VALUES('$info',
-                                  '$tgl_sekarang')";
-      querydb($input);
-    
-	  header("location:../../media.php?module=".$module);
+
+      exec_prepared(
+          "INSERT INTO sekilasinfo (info, tgl_posting) VALUES (?, ?)",
+          "ss",
+          [$info, $tgl_sekarang]
+      );
+
+      header("location:../../media.php?module=".$module);
+      exit;
   }
 
   // Update sekilasinfo
   elseif ($module=='sekilasinfo' AND $act=='update'){
-    $id          = $_POST['id'];
+    require_post_csrf();
+    $id          = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     $info        = $_POST['info'];
-    
-      $input = "UPDATE sekilasinfo SET info = '$info' WHERE id_sekilas='$id'";
-      querydb($input);
-    
-	  header("location:../../media.php?module=".$module);
+
+      exec_prepared(
+          "UPDATE sekilasinfo SET info = ? WHERE id_sekilas = ?",
+          "si",
+          [$info, $id]
+      );
+
+      header("location:../../media.php?module=".$module);
+      exit;
   }
   closedb();
 }

@@ -5,6 +5,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+        require_once __DIR__ . '/../../includes/bootstrap.php';
   $aksi = "modul/mod_menu/aksi_menu.php";
 
   // mengatasi variabel yang belum di definisikan (notice undefined index)
@@ -44,25 +45,64 @@ else{
 					$query  = "SELECT * FROM menu";
 					$tampil = querydb($query);
 					$no=1;
-					while ($r=$tampil->fetch_array()){  
-						echo "<tr><td>$no</td>
-							<td>$r[nama_menu]</td><td>$r[link]</td>";
-						$query2 = "SELECT * FROM menu WHERE id_menu=$r[id_parent]";
-						$hasil  = querydb($query2);
-						$jumlah = $hasil->num_rows; 	
-						if ($jumlah > 0){
-							while($s=$hasil->fetch_array()){
-								echo "<td>$s[nama_menu]</td>"; 
-							}
-						}
-						else{
-							echo "<td>Menu Utama</td>";
-						}
-						echo "<td align=\"center\">$r[aktif]</td>
-						<td align=\"center\"><a href=\"?module=menu&act=editmenu&id=$r[id_menu]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp; 
-						<a href=\"$aksi?module=menu&act=hapus&id=$r[id_menu]\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS MENU INI ?')\" title=\"Hapus Data\"><i class=\"fa fa-trash text-red\"></i></a></td></tr>";
-						$no++;
+					while ($r=$tampil->fetch_array()){
+
+					        $parent = 'Menu Utama';
+
+					        $query2 = "SELECT nama_menu FROM menu WHERE id_menu=?";
+
+					        $hasil  = querydb_prepared($query2, "i", [(int)$r['id_parent']]);
+
+					        if ($hasil && $hasil->num_rows > 0){
+
+					                $s = $hasil->fetch_array();
+
+					                if ($s && isset($s['nama_menu'])){
+
+					                        $parent = $s['nama_menu'];
+
+					                }
+
+					        }
+
+					?><tr>
+
+					        <td><?php echo $no; ?></td>
+
+					        <td><?php echo $r['nama_menu']; ?></td>
+
+					        <td><?php echo $r['link']; ?></td>
+
+					        <td><?php echo $parent; ?></td>
+
+					        <td align="center"><?php echo $r['aktif']; ?></td>
+
+					        <td align="center">
+
+					                <a href="?module=menu&amp;act=editmenu&amp;id=<?php echo $r['id_menu']; ?>" title="Edit Data"><i class="fa fa-pencil"></i></a> &nbsp;
+
+					                <form action="<?php echo $aksi; ?>?module=menu&amp;act=hapus" method="POST" style="display:inline;">
+
+					                        <?php csrf_field(); ?>
+
+					                        <input type="hidden" name="id" value="<?php echo $r['id_menu']; ?>">
+
+					                        <button type="submit" onclick="return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS MENU INI ?')" title="Hapus Data" style="background:none;border:none;padding:0;">
+
+					                                <i class="fa fa-trash text-red"></i>
+
+					                        </button>
+
+					                </form>
+
+					        </td>
+
+					</tr><?php
+
+					        $no++;
+
 					}
+
 					?>
                     </tbody>
                   </table>
@@ -78,6 +118,7 @@ else{
                   <h3 class="box-title">Tambah Menu</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=menu&act=input" class="form-horizontal">
+                                        <?php echo csrf_field(); ?>
 					<div class="box-body">
 						<div class="form-group">
 							<label for="nama_menu" class="col-sm-2 control-label">Nama Menu</label>
@@ -116,15 +157,16 @@ else{
 		break;
 		
 		case "editmenu":
-			$query = "SELECT * FROM menu WHERE id_menu='$_GET[id]'";
-			$hasil = querydb($query);
-			$r     = $hasil->fetch_array();
+                        $id_menu = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+                        $hasil   = querydb_prepared("SELECT * FROM menu WHERE id_menu = ?", "i", [$id_menu]);
+                        $r       = $hasil->fetch_array();
 ?>
 			<div class="box">
                 <div class="box-header with-border">
                   <h3 class="box-title">Edit Menu</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=menu&act=update" class="form-horizontal">
+                                        <?php echo csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo $r['id_menu']; ?>">
 					<div class="box-body">
 						<div class="form-group">

@@ -5,6 +5,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+  require_once __DIR__ . '/../../includes/bootstrap.php';
   $aksi = "modul/mod_sekilasinfo/aksi_sekilasinfo.php";
  
   // mengatasi variabel yang belum di definisikan (notice undefined index)
@@ -44,16 +45,44 @@ else{
 						$tampil = querydb($query);
 					
 					$no=1;
-					while ($r=$tampil->fetch_array()){  
-						$tgl_posting = tgl_indo($r['tgl_posting']);
-						echo "<tr><td>$no</td>
-							<td>$r[info]</td>";
-						echo "<td>$tgl_posting</td>
-							<td align=\"center\"><a href=\"?module=sekilasinfo&act=editsekilasinfo&id=$r[id_sekilas]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp; 
-							<a href=\"$aksi?module=sekilasinfo&act=hapus&id=$r[id_sekilas]\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS INFO INI ?')\" title=\"Hapus Data\"><i class=\"fa fa-trash text-red\"></i></a></td>
-							</tr>";
-						$no++;
+					while ($r=$tampil->fetch_array()){
+
+					        $tgl_posting = tgl_indo($r['tgl_posting']);
+
+					?><tr>
+
+					        <td><?php echo $no; ?></td>
+
+					        <td><?php echo $r['info']; ?></td>
+
+					        <td><?php echo $tgl_posting; ?></td>
+
+					        <td align="center">
+
+					                <a href="?module=sekilasinfo&amp;act=editsekilasinfo&amp;id=<?php echo $r['id_sekilas']; ?>" title="Edit Data"><i class="fa fa-pencil"></i></a> &nbsp;
+
+					                <form action="<?php echo $aksi; ?>?module=sekilasinfo&amp;act=hapus" method="POST" style="display:inline;">
+
+					                        <?php csrf_field(); ?>
+
+					                        <input type="hidden" name="id" value="<?php echo $r['id_sekilas']; ?>">
+
+					                        <button type="submit" onclick="return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS INFO INI ?')" title="Hapus Data" style="background:none;border:none;padding:0;">
+
+					                                <i class="fa fa-trash text-red"></i>
+
+					                        </button>
+
+					                </form>
+
+					        </td>
+
+					</tr><?php
+
+					        $no++;
+
 					}
+
 					?>
                     </tbody>
                   </table>
@@ -69,6 +98,7 @@ else{
                   <h3 class="box-title">Tambah Info</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=sekilasinfo&act=input" class="form-horizontal" enctype="multipart/form-data">
+                                        <?php echo csrf_field(); ?>
 					<div class="box-body">
 						<div class="form-group">
 							<label for="isi_agenda" class="col-sm-2 control-label">Info</label>
@@ -87,8 +117,8 @@ else{
 	
 	case "editsekilasinfo":
 
-        $query = "SELECT * FROM sekilasinfo WHERE id_sekilas='$_GET[id]'";
-        $hasil = querydb($query);
+        $id_sekilas = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        $hasil = querydb_prepared("SELECT * FROM sekilasinfo WHERE id_sekilas = ?", "i", [$id_sekilas]);
 
       $r = $hasil->fetch_array();
 
@@ -98,6 +128,7 @@ else{
                   <h3 class="box-title">Edit Info</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=sekilasinfo&act=update" class="form-horizontal" enctype="multipart/form-data">
+                                        <?php echo csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo $r['id_sekilas']; ?>" />
 					<div class="box-body">
 						<div class="form-group">

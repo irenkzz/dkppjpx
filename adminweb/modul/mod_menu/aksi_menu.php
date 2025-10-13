@@ -6,7 +6,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-  include "../../../config/koneksi.php";
+  require_once __DIR__ . '/../../includes/bootstrap.php';
   include "../../../config/library.php";
   opendb();
 
@@ -15,44 +15,49 @@ else{
 
   // Hapus menu
   if ($module=='menu' AND $act=='hapus'){
-    $query = "DELETE FROM menu WHERE id_menu='$_GET[id]'";
-    querydb($query);
+    require_post_csrf();
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if ($id > 0) {
+      exec_prepared("DELETE FROM menu WHERE id_menu = ?", "i", [$id]);
+    }
     header("location:../../media.php?module=".$module);
+    exit;
   }
 
   // Input menu
   elseif ($module=='menu' AND $act=='input'){
+    require_post_csrf();
     $nama_menu = $_POST['nama_menu'];
     $link      = $_POST['link'];
-    $id_parent = $_POST['id_parent'];
+    $id_parent = isset($_POST['id_parent']) ? (int)$_POST['id_parent'] : 0;
 
-    $input = "INSERT INTO menu(nama_menu, 
-                               link,
-                               id_parent) 
-                        VALUES('$nama_menu', 
-                               '$link',
-                               '$id_parent')";
-    querydb($input);
+    exec_prepared(
+      "INSERT INTO menu (nama_menu, link, id_parent) VALUES (?, ?, ?)",
+      "ssi",
+      [$nama_menu, $link, $id_parent]
+    );
 
     header("location:../../media.php?module=".$module);
-  } 
+    exit;
+  }
 
   // Update menu
   elseif ($module=='menu' AND $act=='update'){
-    $id        = $_POST['id'];
+    require_post_csrf();
+    $id        = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     $nama_menu = $_POST['nama_menu'];
     $link      = $_POST['link'];
-    $id_parent = $_POST['id_parent'];
+    $id_parent = isset($_POST['id_parent']) ? (int)$_POST['id_parent'] : 0;
     $aktif     = $_POST['aktif'];
 
-    $update = "UPDATE menu SET nama_menu = '$nama_menu',
-                               link      = '$link', 
-                               aktif     = '$aktif', 
-                               id_parent = '$id_parent'
-                         WHERE id_menu   = '$id'";
-    querydb($update);
-      
+    exec_prepared(
+      "UPDATE menu SET nama_menu = ?, link = ?, aktif = ?, id_parent = ? WHERE id_menu = ?",
+      "sssii",
+      [$nama_menu, $link, $aktif, $id_parent, $id]
+    );
+
     header("location:../../media.php?module=".$module);
+    exit;
   }
   closedb();
 }
