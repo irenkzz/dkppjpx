@@ -66,13 +66,24 @@ else{
 					$no=1;
 					while ($r=$tampil->fetch_array()){  
 						$tgl_posting=tgl_indo($r['tanggal']);
-						echo "<tr><td>$no</td>
-							<td width=\"350\">$r[judul]</td>
-							<td>$r[nama_kategori]</td>
-							<td>$tgl_posting</td>
-							<td align=\"center\"><a href=\"?module=berita&act=editberita&id=$r[id_berita]\" title=\"Edit Berita\"><i class=\"fa fa-pencil\"></i></a> &nbsp; 
-							<a href=\"$aksi?module=berita&act=hapus&id=$r[id_berita]\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS BERITA INI ?')\" title=\"Hapus Berita\"><i class=\"fa fa-trash text-red\"></i></a></td>
-							</tr>";
+						echo '<tr>
+								<td>'.$no.'</td>
+								<td width="350">'.$r['judul'].'</td>
+								<td>'.$r['nama_kategori'].'</td>
+								<td>'.$tgl_posting.'</td>
+								<td align="center">
+									<a href="?module=berita&act=editberita&id='.$r['id_berita'].'" title="Edit Berita">
+										<i class="fa fa-pencil"></i>
+									</a> &nbsp;
+									<form method="POST" action="'.$aksi.'?module=berita&act=hapus" style="display:inline" onsubmit="return confirm(\'APAKAH ANDA YAKIN AKAN MENGHAPUS BERITA INI ?\')">
+										<input type="hidden" name="csrf" value="'.htmlspecialchars($_SESSION['csrf'] ?? '', ENT_QUOTES, 'UTF-8').'">
+										<input type="hidden" name="id" value="'.(int)$r['id_berita'].'">
+										<button type="submit" class="btn btn-link" title="Hapus Berita" style="padding:0; border:none;">
+											<i class="fa fa-trash text-red"></i>
+										</button>
+									</form>
+								</td>
+							</tr>';
 						$no++;
 					}
 					?>
