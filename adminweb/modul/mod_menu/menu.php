@@ -71,7 +71,7 @@ else{
 <?php
 		break;
 		
-		case "tambahmenu":
+                case "tambahmenu":
 ?>
 			<div class="box">
                 <div class="box-header with-border">
@@ -97,16 +97,18 @@ else{
 								<select class="form-control select2" id="id_parent" name="id_parent">
 									<option value="0" selected>Menu Utama</option>
 									<?php
-									$query  = "SELECT * FROM menu WHERE id_parent=0 ORDER BY id_menu";
-									$tampil = querydb($query);
-									while($r=$tampil->fetch_array()){
-										echo "<option value=\"$r[id_menu]\">$r[nama_menu]</option>";
-									}
-									?>
-								</select>
-							</div>
-						</div>
-					</div><!-- /.box-body -->
+                                                                        $stmt = $dbconnection->prepare("SELECT * FROM menu WHERE id_parent = 0 ORDER BY id_menu");
+                                                                        $stmt->execute();
+                                                                        $tampil = $stmt->get_result();
+                                                                        while($r=$tampil->fetch_array()){
+                                                                                echo "<option value=\"$r[id_menu]\">$r[nama_menu]</option>";
+                                                                        }
+                                                                        $stmt->close();
+                                                                        ?>
+                                                                </select>
+                                                        </div>
+                                                </div>
+                                        </div><!-- /.box-body -->
 					<div class="box-footer">
 						<button type="submit" class="btn btn-primary">Simpan</button> <button type="button" onclick="self.history.back()" class="btn">Batal</button>
 					</div><!-- /.box-footer -->
@@ -115,12 +117,16 @@ else{
 <?php
 		break;
 		
-		case "editmenu":
-			$query = "SELECT * FROM menu WHERE id_menu='$_GET[id]'";
-			$hasil = querydb($query);
-			$r     = $hasil->fetch_array();
+                case "editmenu":
+                        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+                        $stmt = $dbconnection->prepare("SELECT * FROM menu WHERE id_menu = ?");
+                        $stmt->bind_param("i", $id);
+                        $stmt->execute();
+                        $hasil = $stmt->get_result();
+                        $r     = $hasil->fetch_array();
+                        $stmt->close();
 ?>
-			<div class="box">
+                        <div class="box">
                 <div class="box-header with-border">
                   <h3 class="box-title">Edit Menu</h3>
                 </div><!-- /.box-header -->
@@ -149,23 +155,25 @@ else{
 										<option value="0">Menu Utama</option>
 									<?php
 									}
-									$query2  = "SELECT * FROM menu WHERE id_parent=0 ORDER BY id_menu";
-									$tampil2 = querydb($query2);
-									while($w=$tampil2->fetch_array()){
-										if ($r['id_parent']==$w['id_menu']){
-											echo "<option value=\"$w[id_menu]\" selected>$w[nama_menu]</option>";
-										} else {
-											if ($w['id_menu']==$r['id_menu']){
-												echo "<option value=\"0\">Tanpa Level</option>";
+                                                                        $stmt2  = $dbconnection->prepare("SELECT * FROM menu WHERE id_parent = 0 ORDER BY id_menu");
+                                                                        $stmt2->execute();
+                                                                        $tampil2 = $stmt2->get_result();
+                                                                        while($w=$tampil2->fetch_array()){
+                                                                                if ($r['id_parent']==$w['id_menu']){
+                                                                                        echo "<option value=\"$w[id_menu]\" selected>$w[nama_menu]</option>";
+                                                                                } else {
+                                                                                        if ($w['id_menu']==$r['id_menu']){
+                                                                                                echo "<option value=\"0\">Tanpa Level</option>";
 											}
 											else{
 												echo "<option value=\"$w[id_menu]\">$w[nama_menu]</option>";
-											}
-										}
-									}
-									?>
-								</select>
-							</div>
+                                                                                        }
+                                                                                }
+                                                                        }
+                                                                        $stmt2->close();
+                                                                        ?>
+                                                                </select>
+                                                        </div>
 						</div>
 						<div class="form-group">
 							<label for="aktif" class="col-sm-2 control-label">Aktif</label>

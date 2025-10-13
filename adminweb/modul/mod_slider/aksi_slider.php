@@ -17,27 +17,25 @@ else{
 
   // Hapus slider
   if ($module === 'slider' && $act === 'hapus') {
-    require_post_csrf();
-
-    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-    if ($id <= 0) { header("location:../../media.php?module=".$module); exit; }
+    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
     $stmt = $dbconnection->prepare("SELECT gmb_slider FROM slider WHERE id_slider = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
-    $stmt->bind_result($gmb);
-    $has = $stmt->fetch();
+    $hapus = $stmt->get_result();
+    $r = $hapus->fetch_array();
     $stmt->close();
+
+    if ($r && !empty($r['gmb_slider'])) {
+      $namafile = basename($r['gmb_slider']);
+      @unlink("../../../foto_slider/$namafile");
+      @unlink("../../../foto_slider/small_$namafile");
+    }
 
     $stmt = $dbconnection->prepare("DELETE FROM slider WHERE id_slider = ?");
     $stmt->bind_param("i", $id);
     $stmt->execute();
     $stmt->close();
-
-    if ($has && !empty($gmb)) {
-        @unlink(__DIR__ . "/../../../foto_slider/" . basename($gmb));
-        @unlink(__DIR__ . "/../../../foto_slider/small_" . basename($gmb));
-    }
 
     header("location:../../media.php?module=".$module);
     exit;

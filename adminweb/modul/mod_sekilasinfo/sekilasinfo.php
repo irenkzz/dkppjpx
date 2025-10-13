@@ -87,10 +87,14 @@ else{
 	
 	case "editsekilasinfo":
 
-        $query = "SELECT * FROM sekilasinfo WHERE id_sekilas='$_GET[id]'";
-        $hasil = querydb($query);
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        $stmt = $dbconnection->prepare("SELECT * FROM sekilasinfo WHERE id_sekilas = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $hasil = $stmt->get_result();
 
       $r = $hasil->fetch_array();
+        $stmt->close();
 
 ?>
 			<div class="box">

@@ -3,19 +3,23 @@ $ambiliden=querydb("SELECT * FROM identitas LIMIT 1");
 $tiden=$ambiliden->fetch_array();
 
 if (isset($_GET['id'])){
-  $id_berita = (int)$_GET['id'];
-  $sql = querydb_prepared("SELECT * FROM berita WHERE id_berita = ?", "i", [$id_berita]);
-  $dt = $sql->fetch_array();
-  
+  $id = (int)$_GET['id'];
+  $stmt = $dbconnection->prepare("SELECT * FROM berita WHERE id_berita = ?");
+  $stmt->bind_param("i", $id);
+  $stmt->execute();
+  $sql = $stmt->get_result();
+  $dt  = $sql->fetch_array();
+  $stmt->close();
+
   if (!$dt) {
     $isi_description = '';
     $description = '';
-	} else {
+        } else {
     $isi_description = strip_tags($dt['isi_berita'] ?? '');
     $description = substr($isi_description, 0, 200);
     $description = substr($isi_description, 0, strrpos($description, " "));
-	}
-  
+        }
+
   $url = $tiden['alamat_website']."baca-berita-".@$dt['id_berita']."-".@$dt['judul_seo'].".html";
   $image = $tiden['alamat_website']."foto_berita/".@$dt['gambar'];
 }else{
