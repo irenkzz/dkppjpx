@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../includes/bootstrap.php';
 // Apabila user belum login
 if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 	echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location = '../../index.php'</script>";
@@ -69,6 +70,7 @@ else{
                   <h3 class="box-title">Tambah Modul</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=modul&act=input" class="form-horizontal">
+					<?php echo csrf_field(); ?>
 					<div class="box-body">
 						<div class="form-group">
 							<label for="nama_modul" class="col-sm-2 control-label">Nama Modul</label>
@@ -92,15 +94,17 @@ else{
 		break;
 		
 		case "editmodul":
-			$query = "SELECT * FROM modul WHERE id_modul='$_GET[id]'";
-			$hasil = querydb($query);
-			$r     = $hasil->fetch_array();
+			$id_modul = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+			$hasil    = querydb_prepared("SELECT * FROM modul WHERE id_modul = ?", "i", [$id_modul]);
+			$r        = $hasil->fetch_array();
+
 ?>
 			<div class="box">
                 <div class="box-header with-border">
                   <h3 class="box-title">Edit Modul</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=modul&act=update" class="form-horizontal">
+					<?php echo csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo $r['id_modul']; ?>">
 					<div class="box-body">
 						<div class="form-group">
