@@ -25,26 +25,36 @@ else{
 
   // Hapus agenda
   if ($module=='agenda' AND $act=='hapus'){
-    $query = "SELECT gambar FROM agenda WHERE id_agenda='$_GET[id]'";
-    $hapus = querydb($query);
-    $r     = $hapus->fetch_array();
-    
-    if ($r['gambar']!=''){
-      $namafile = $r['gambar'];
-      
-      // hapus file foto yang berhubungan dengan agenda tersebut
-      unlink("../../../foto_banner/$namafile");   
-      unlink("../../../foto_banner/small_$namafile");   
-      unlink("../../../foto_banner/medium_$namafile");   
+    require_post_csrf();
 
-      // hapus data agenda di database 
-      querydb("DELETE FROM agenda WHERE id_agenda='$_GET[id]'");      
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if ($id <= 0) { header("location:../../media.php?module=".$module); exit; }
+
+    // fetch filename (prepared)
+    $stmt = $dbconnection->prepare("SELECT gambar FROM agenda WHERE id_agenda = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $r   = $res ? $res->fetch_array() : null;
+    $stmt->close();
+
+    // delete row (prepared)
+    $stmt = $dbconnection->prepare("DELETE FROM agenda WHERE id_agenda = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $stmt->close();
+
+    // unlink safely (after DB delete)
+    if ($r && !empty($r['gambar'])) {
+      $base = basename($r['gambar']);
+      @unlink(__DIR__ . "/../../../foto_agenda/$base");
+      @unlink(__DIR__ . "/../../../foto_agenda/small_$base");
     }
-    else{
-      querydb("DELETE FROM agenda WHERE id_agenda='$_GET[id]'");
-    }
+
     header("location:../../media.php?module=".$module);
+    exit;
   }
+
 
   // Input agenda
   elseif ($module=='agenda' AND $act=='input'){

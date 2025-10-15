@@ -53,8 +53,12 @@ else{
 						$tampil = querydb($query);
 					}
 					else{
-						$query  = "SELECT * FROM agenda WHERE username='$_SESSION[namauser]' ORDER BY id_agenda DESC";
-						$tampil = querydb($query);
+						 $username = $_SESSION['namauser'];
+						 $tampil   = querydb_prepared(
+						 	"SELECT * FROM agenda WHERE username = ? ORDER BY id_agenda DESC",
+							 "s",
+						 	[$username]
+						 );
 					}
 					$no=1;
 					while ($r=$tampil->fetch_array()){  
@@ -70,8 +74,17 @@ else{
 							echo "<td>$tgl_mulai s/d $tgl_selesai</td>";
 						}
 						echo "<td align=\"center\">$tgl_posting</td>
-							<td align=\"center\"><a href=\"?module=agenda&act=editagenda&id=$r[id_agenda]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp; 
-							<a href=\"$aksi?module=agenda&act=hapus&id=$r[id_agenda]\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS AGENDA INI ?')\" title=\"Hapus Data\"><i class=\"fa fa-trash text-red\"></i></a></td>
+							<td align=\"center\">
+								<a href=\"?module=agenda&act=editagenda&id=$r[id_agenda]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp;
+
+								<form method=\"POST\" action=\"$aksi?module=agenda&act=hapus\" style=\"display:inline;\">
+								" . csrf_field() . "
+								<input type=\"hidden\" name=\"id\" value=\"$r[id_agenda]\">
+								<button type=\"submit\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS AGENDA INI ?')\" title=\"Hapus Data\" style=\"border:none;background:none;padding:0;cursor:pointer;\">
+									<i class=\"fa fa-trash text-red\"></i>
+								</button>
+								</form>
+							</td>
 							</tr>";
 						$no++;
 					}
@@ -152,12 +165,16 @@ else{
 	
 	case "editagenda":
       if ($_SESSION['leveluser']=='admin'){
-        $query = "SELECT * FROM agenda WHERE id_agenda='$_GET[id]'";
-        $hasil = querydb($query);
+        $id_agenda = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+		$hasil     = querydb_prepared("SELECT * FROM agenda WHERE id_agenda = ?", "i", [$id_agenda]);
       }
       else{
-        $query = "SELECT * FROM agenda WHERE id_agenda='$_GET[id]' AND username='$_SESSION[namauser]'";
-        $hasil = querydb($query);
+        $id_agenda = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+		$hasil     = querydb_prepared(
+		"SELECT * FROM agenda WHERE id_agenda = ? AND username = ?",
+		"is",
+		[$id_agenda, $_SESSION['namauser']]
+		);
       }
 
       $r = $hasil->fetch_array();
