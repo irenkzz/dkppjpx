@@ -85,6 +85,7 @@ else{
                   <h3 class="box-title">Tambah User</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=user&act=input" class="form-horizontal">
+					<?php csrf_field(); ?>
 					<div class="box-body">
 						<div class="form-group">
 							<label for="username" class="col-sm-3 control-label">Username</label>
@@ -133,8 +134,10 @@ else{
                   <h3 class="box-title">Edit User</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=user&act=update" class="form-horizontal">
+					
 					<?php
 					if ($_SESSION['leveluser']=='admin'){
+						csrf_field();
 					?>
 					<input type="hidden" name="id" value="<?php echo $r['id_session']; ?>">
 					<div class="box-body">
@@ -187,6 +190,7 @@ else{
 					<?php
 					}
 					else {
+						csrf_field();
 					?>
 					<input type="hidden" name="id" value="<?php echo $r['id_session']; ?>">
 					<input type="hidden" name="blokir" value="<?php echo $r['blokir']; ?>">

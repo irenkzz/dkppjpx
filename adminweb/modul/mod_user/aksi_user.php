@@ -44,12 +44,12 @@ else{
   elseif ($module=='user' && $act=='update'){
     require_post_csrf();
 
-    $id           = (int)($_POST['id'] ?? 0);
+    $id           = trim($_POST['id'] ?? '');
     $nama_lengkap = trim($_POST['nama_lengkap'] ?? '');
     $email        = trim($_POST['email'] ?? '');
     $blokir       = $_POST['blokir'] ?? '';
 
-    if ($id <= 0 || $nama_lengkap === '' || $email === '') {
+    if ($id === '' || $nama_lengkap === '' || $email === '') {
       echo "<script>alert('Data tidak valid');history.back();</script>";
       exit;
     }
@@ -62,7 +62,7 @@ else{
           SET nama_lengkap = ?, email = ?, blokir = ?
         WHERE id_session = ?
       ");
-      $stmt->bind_param("sssi", $nama_lengkap, $email, $blokir, $id);
+      $stmt->bind_param("ssss", $nama_lengkap, $email, $blokir, $id);
       $stmt->execute();
       $stmt->close();
     } else {
@@ -72,7 +72,7 @@ else{
           SET nama_lengkap = ?, email = ?, blokir = ?, password = ?
         WHERE id_session = ?
       ");
-      $stmt->bind_param("ssssi", $nama_lengkap, $email, $blokir, $password, $id);
+      $stmt->bind_param("sssss", $nama_lengkap, $email, $blokir, $password, $id);
       $stmt->execute();
       $stmt->close();
     }
