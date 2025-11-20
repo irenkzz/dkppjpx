@@ -14,43 +14,67 @@ else{
 
   // Hapus templates
   if ($module=='templates' AND $act=='hapus'){
-    $hapus = "DELETE FROM templates WHERE id_templates='$_GET[id]'";
-    querydb($hapus);
-    
+    require_post_csrf();
+
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if ($id > 0) {
+      exec_prepared("DELETE FROM templates WHERE id_templates = ?", "i", [$id]);
+    }
+
     header("location:../../media.php?module=".$module);
+    exit;
   }
 
   // Input templates
   if ($module=='templates' AND $act=='input'){
+    require_post_csrf();
+
     $nama_templates = $_POST['nama_templates'];
-    $pembuat        = $_POST['pembuat'];;
-    $folder         = $_POST['folder'];;
-    
-    $input = "INSERT INTO templates(judul, pembuat, folder) VALUES('$nama_templates', '$pembuat', '$folder')";
-    querydb($input);
-    
+    $pembuat        = $_POST['pembuat'];
+    $folder         = $_POST['folder'];
+
+    exec_prepared(
+      "INSERT INTO templates (judul, pembuat, folder) VALUES (?, ?, ?)",
+      "sss",
+      [$nama_templates, $pembuat, $folder]
+    );
+
     header("location:../../media.php?module=".$module);
+    exit;
   }
 
   // Update templates
   elseif ($module=='templates' AND $act=='update'){
-    $id             = $_POST['id'];
+    require_post_csrf();
+
+    $id             = (int)($_POST['id'] ?? 0);
     $nama_templates = $_POST['nama_templates'];
-    $pembuat        = $_POST['pembuat'];;
-    $folder         = $_POST['folder'];;
-    
-    $update = "UPDATE templates SET judul='$nama_templates', pembuat='$pembuat', folder='$folder' WHERE id_templates='$id'";
-    querydb($update);
+    $pembuat        = $_POST['pembuat'];
+    $folder         = $_POST['folder'];
+
+    exec_prepared(
+      "UPDATE templates SET judul = ?, pembuat = ?, folder = ? WHERE id_templates = ?",
+      "sssi",
+      [$nama_templates, $pembuat, $folder, $id]
+    );
 
     header("location:../../media.php?module=".$module);
+    exit;
   }
 
   // Aktifkan templates
   elseif ($module=='templates' AND $act=='aktifkan'){
-    $query1 = querydb("UPDATE templates SET aktif='Y' WHERE id_templates='$_GET[id]'");
-    $query2 = querydb("UPDATE templates SET aktif='N' WHERE id_templates!='$_GET[id]'");
+    require_post_csrf();
+
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if ($id > 0) {
+      exec_prepared("UPDATE templates SET aktif = 'Y' WHERE id_templates = ?", "i", [$id]);
+      // de-activate others
+      exec_prepared("UPDATE templates SET aktif = 'N' WHERE id_templates != ?", "i", [$id]);
+    }
 
     header("location:../../media.php?module=".$module);
+    exit;
   }
   closedb();
 }

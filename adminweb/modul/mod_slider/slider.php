@@ -6,6 +6,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+  require_once __DIR__ . '/../../includes/bootstrap.php';
   $aksi = "modul/mod_slider/aksi_slider.php";
 
   // mengatasi variabel yang belum di definisikan (notice undefined index)
@@ -98,8 +99,8 @@ else{
 	break;
 	
 	case "editslider":
-      $query = "SELECT * FROM slider WHERE id_slider='$_GET[id]'";
-      $hasil = querydb($query);
+      $id_slider = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+      $hasil = querydb_prepared("SELECT * FROM slider WHERE id_slider = ?", "i", [$id_slider]);
 
       $r = $hasil->fetch_array();
 ?>

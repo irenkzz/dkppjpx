@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/../../includes/bootstrap.php';
 // Apabila user belum login
 if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 	echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location = '../../index.php'</script>";
@@ -14,39 +14,44 @@ else{
 
   // Input modul
   if ($module=='modul' AND $act=='input'){
-    // cari urutan terakhir
+    require_post_csrf();
+
+    // cari urutan terakhir (read-only; keep as-is)
     $query = querydb("SELECT urutan FROM modul ORDER BY urutan DESC LIMIT 1");
     $r     = $query->fetch_array();
-    
-    $urutan     = $r['urutan']+1;
+    $urutan = (int)$r['urutan'] + 1;
+
     $nama_modul = $_POST['nama_modul'];
     $link       = $_POST['link'];
-    
-    $input = "INSERT INTO modul(nama_modul, link, urutan) VALUES('$nama_modul', '$link', '$urutan')";
-    querydb($input);
-    
+
+    exec_prepared(
+      "INSERT INTO modul (nama_modul, link, urutan) VALUES (?, ?, ?)",
+      "ssi",
+      [$nama_modul, $link, $urutan]
+    );
+
     header("location:../../media.php?module=".$module);
   }
 
-  // Update modul
   elseif ($module=='modul' AND $act=='update'){
-    $id         = $_POST['id'];
-    $urutan     = $_POST['urutan'];
-    $nama_modul = $_POST['nama_modul'];
-    $link       = $_POST['link'];
-    $status     = $_POST['status'];
-    $aktif      = $_POST['aktif'];
-    
-    $update = "UPDATE modul SET nama_modul = '$nama_modul',
-                                link       = '$link',
-                                urutan     = '$urutan',
-                                status     = '$status', 
-                                aktif      = '$aktif' 
-                          WHERE id_modul   = '$id'";
-    querydb($update);
-    
-    header("location:../../media.php?module=".$module);
+  require_post_csrf();
+
+  $id         = (int)($_POST['id'] ?? 0);
+  $urutan     = (int)($_POST['urutan'] ?? 0);
+  $nama_modul = $_POST['nama_modul'];
+  $link       = $_POST['link'];
+  $status     = $_POST['status'];
+  $aktif      = $_POST['aktif'];
+
+  exec_prepared(
+    "UPDATE modul SET nama_modul = ?, link = ?, urutan = ?, status = ?, aktif = ? WHERE id_modul = ?",
+    "ssissi",
+    [$nama_modul, $link, $urutan, $status, $aktif, $id]
+  );
+
+  header("location:../../media.php?module=".$module);
   }
+  
   closedb();
 }
 ?>

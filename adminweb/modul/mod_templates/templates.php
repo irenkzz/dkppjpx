@@ -44,15 +44,36 @@ else{
 					$tampil = querydb($query);
 					$no=1;
 					while ($r=$tampil->fetch_array()){  
-						echo "<tr><td>$no</td>
-							<td>$r[judul]</td>
-                			<td>$r[pembuat]</td>
-                  			<td>$r[folder]</td>
-                  			<td align=\"center\">$r[aktif]</td>
-                  			<td align=\"center\"><a href=\"?module=templates&act=edittemplates&id=$r[id_templates]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp; 
-                			<a href=\"$aksi?module=templates&act=hapus&id=$r[id_templates]\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS TEMPLATES INI ?')\" title=\"Hapus Data\"><i class=\"fa fa-trash text-red\"></i></a> &nbsp; 
-	                    	<a href=\"$aksi?module=templates&act=aktifkan&id=$r[id_templates]\" title=\"Aktifkan\"><i class=\"fa fa-check text-green\"></i></a></td>
+						echo "<tr>
+								<td>$no</td>
+								<td>$r[judul]</td>
+								<td>$r[pembuat]</td>
+								<td>$r[folder]</td>
+								<td align=\"center\">$r[aktif]</td>
+								<td align=\"center\">
+								<a href=\"?module=templates&act=edittemplates&id=$r[id_templates]\" title=\"Edit Data\">
+									<i class=\"fa fa-pencil\"></i>
+								</a> &nbsp;
+
+								<form method=\"POST\" action=\"$aksi?module=templates&act=hapus\" style=\"display:inline;\">
+									" . csrf_field() . "
+									<input type=\"hidden\" name=\"id\" value=\"$r[id_templates]\">
+									<button type=\"submit\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS TEMPLATES INI ?')\" 
+											title=\"Hapus Data\" style=\"border:none;background:none;padding:0;cursor:pointer;\">
+									<i class=\"fa fa-trash text-red\"></i>
+									</button>
+								</form> &nbsp;
+
+								<form method=\"POST\" action=\"$aksi?module=templates&act=aktifkan\" style=\"display:inline;\">
+									" . csrf_field() . "
+									<input type=\"hidden\" name=\"id\" value=\"$r[id_templates]\">
+									<button type=\"submit\" title=\"Aktifkan\" style=\"border:none;background:none;padding:0;cursor:pointer;\">
+									<i class=\"fa fa-check text-green\"></i>
+									</button>
+								</form>
+								</td>
 							</tr>";
+
 						$no++;
 					}
 					?>
@@ -99,9 +120,10 @@ else{
 		break;
 		
 		case "edittemplates":
-			$query = "SELECT * FROM templates WHERE id_templates='$_GET[id]'";
-			$hasil = querydb($query);
+			$id_templates = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+			$hasil = querydb_prepared("SELECT * FROM templates WHERE id_templates = ?", "i", [$id_templates]);
 			$r     = $hasil->fetch_array();
+
 ?>
 			<div class="box">
                 <div class="box-header with-border">
