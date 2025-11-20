@@ -4,7 +4,7 @@ require_once('fungsi_validasi.php');
 $dbhost="localhost";
 $dbuser="root";
 $dbpassword="";
-$dbname="u1342335_wk_pemerintah";
+$dbname="dkppjpx";
 
 $dbconnection = null;
 
