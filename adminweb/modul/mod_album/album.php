@@ -155,7 +155,7 @@ else{
 							<div class="col-sm-10">
 								<?php
 								if ($r['gbr_album']!=''){
-									echo "<img src=\"../img_album/kecil_$r[gbr_album]\">";  
+									echo "<img src=\"../img_album/small_$r[gbr_album]\">";  
 								}
 								else{
 									echo "Belum ada gambar";

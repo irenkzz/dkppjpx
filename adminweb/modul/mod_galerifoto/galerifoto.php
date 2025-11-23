@@ -52,7 +52,7 @@ else{
 						$no = 1;
 						while ($r = $res->fetch_assoc()) {
 							echo "<tr><td>$no</td>
-								<td><img src=\"../img_galeri/kecil_$r[gbr_gallery]\" width=\"100\" height=\"75\"></td>
+								<td><img src=\"../img_galeri/small_$r[gbr_gallery]\" width=\"100\" height=\"75\"></td>
 								<td>$r[jdl_gallery]</td>
 								<td>$r[jdl_album]</td>
 								<td align=\"center\">
@@ -71,7 +71,7 @@ else{
 						$no = 1;
 						while ($stmt->fetch()) {
 							echo "<tr><td>$no</td>
-								<td><img src=\"../img_galeri/kecil_$gbr_gallery\" width=\"100\" height=\"75\"></td>
+								<td><img src=\"../img_galeri/small_$gbr_gallery\" width=\"100\" height=\"75\"></td>
 								<td>$jdl_gallery</td>
 								<td>$jdl_album</td>
 								<td align=\"center\">
@@ -232,7 +232,7 @@ else{
 							<div class="col-sm-10">
 								<?php
 								if ($r['gbr_gallery']!=''){
-									echo "<img src=\"../img_galeri/kecil_$r[gbr_gallery]\">";  
+									echo "<img src=\"../img_galeri/small_$r[gbr_gallery]\">";  
 								}
 								else{
 									echo "Belum ada foto";

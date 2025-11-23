@@ -371,7 +371,7 @@ if ($_GET['module']=='home'){
 						<li class="media space margin-bottom-20">
 							<div class="media-left">
 								<img class="media-object borderthumb" 
-									 src="foto_berita/medium_<?php echo $a['gambar']; ?>" 
+									 src="foto_berita/small_<?php echo $a['gambar']; ?>" 
 									 alt="<?php echo $a['judul']; ?>" 
 									 width="125" 
 									 height="70">
@@ -571,7 +571,7 @@ if ($_GET['module']=='home'){
 			?>
 			<div class="col-md-3 col-sm-6 col-xs-12 margin-bottom-15">
 				<div class="content-box box-img no-margin text-center featured-news box-clickable">
-					<img class="img-responsive" src="img_album/kecil_<?php echo $tfab['gbr_album']; ?>" alt="<?php echo $tfab['jdl_album']; ?>" width="100%" style="height:230px;">
+					<img class="img-responsive" src="img_album/small_<?php echo $tfab['gbr_album']; ?>" alt="<?php echo $tfab['jdl_album']; ?>" width="100%" style="height:230px;">
 					<div class="ua-square-logo overlap-top text-center">
 						<center>
 							<div class="overlay-custom" style="max-width: 150px;margin-top:30px;">
@@ -1683,10 +1683,10 @@ elseif ($_GET['module']=='semuaalbum'){
 					<article class="content-box box-img bg-light box-clickable media">
 						<div class="box-body media">
 							<div class="media-left visible-xs no-padding margin-bottom-10">
-								<img class="img-responsive media-object borderthumb" src="img_album/kecil_<?php echo $w['gbr_album']; ?>" alt="<?php echo $w['jdl_album']; ?>" style="width: 100%;height: auto; ">
+								<img class="img-responsive media-object borderthumb" src="img_album/small_<?php echo $w['gbr_album']; ?>" alt="<?php echo $w['jdl_album']; ?>" style="width: 100%;height: auto; ">
 							</div>
 							<div style="float:left; margin-right: 10px;" class="media-left hidden-xs">
-								<img class="media-object borderthumb" src="img_album/kecil_<?php echo $w['gbr_album']; ?>" alt="<?php echo $w['jdl_album']; ?>" width="190" height="120">
+								<img class="media-object borderthumb" src="img_album/small_<?php echo $w['gbr_album']; ?>" alt="<?php echo $w['jdl_album']; ?>" width="190" height="120">
 							</div>
 							<div class="media-body">
 							<h3>
