@@ -5,10 +5,11 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-  $aksi = "modul/mod_album/aksi_album.php";
+	require_once __DIR__ . "/../../includes/bootstrap.php";
+  	$aksi = "modul/mod_album/aksi_album.php";
 
-  // mengatasi variabel yang belum di definisikan (notice undefined index)
-  $act = isset($_GET['act']) ? $_GET['act'] : '';  
+  	// mengatasi variabel yang belum di definisikan (notice undefined index)
+  	$act = isset($_GET['act']) ? $_GET['act'] : '';  
 ?>
 	<section class="content-header">
 		<h1>Album Photo</h1>
@@ -45,10 +46,14 @@ else{
 						$res = $stmt->get_result();
 						$no = 1;
 						while ($r = $res->fetch_assoc()) {
+							$id    = (int)$r['id_album'];
+							$judul = e($r['jdl_album']);
+							$aktif = e($r['aktif']);
+
 							echo "<tr><td>$no</td>
-								<td>$r[jdl_album]</td>
-								<td align=\"center\">$r[aktif]</td>
-								<td align=\"center\"><a href=\"?module=album&act=editalbum&id=$r[id_album]\"><i class=\"fa fa-pencil\"></i></a></td>
+								<td>$judul</td>
+								<td align=\"center\">$aktif</td>
+								<td align=\"center\"><a href=\"?module=album&act=editalbum&id=$id\"><i class=\"fa fa-pencil\"></i></a></td>
 								</tr>";
 							$no++;
 						}
@@ -56,10 +61,14 @@ else{
 						$stmt->bind_result($id_album, $jdl_album, $aktif);
 						$no = 1;
 						while ($stmt->fetch()) {
+							$id    = (int)$id_album;
+							$judul = e($jdl_album);
+							$aktif_safe = e($aktif);
+
 							echo "<tr><td>$no</td>
-								<td>$jdl_album</td>
-								<td align=\"center\">$aktif</td>
-								<td align=\"center\"><a href=\"?module=album&act=editalbum&id=$id_album\"><i class=\"fa fa-pencil\"></i></a></td>
+								<td>$judul</td>
+								<td align=\"center\">$aktif_safe</td>
+								<td align=\"center\"><a href=\"?module=album&act=editalbum&id=$id\"><i class=\"fa fa-pencil\"></i></a></td>
 								</tr>";
 							$no++;
 						}
@@ -135,7 +144,7 @@ else{
 						<div class="form-group">
 							<label for="nama_album" class="col-sm-2 control-label">Nama Album</label>
 							<div class="col-sm-10">
-								<input type="text" class="form-control" id="nama_album" name="nama_album" value="<?php echo $r['jdl_album']; ?>" />
+								<input type="text" class="form-control" id="nama_album" name="nama_album" value="<?php echo e($r['jdl_album']); ?>" />
 							</div>
 						</div>
 						<div class="form-group">

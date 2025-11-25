@@ -5,6 +5,8 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+	require_once __DIR__ . "/../../includes/bootstrap.php";
+
 	$aksi = "modul/mod_polling/aksi_polling.php";
 
 	// mengatasi variabel yang belum di definisikan (notice undefined index)
@@ -42,17 +44,31 @@ else{
 					<?php
 					$query  = "SELECT * FROM poling ORDER BY id_poling DESC";
 					$tampil = querydb($query);
-					$no=1;
-					while ($r=$tampil->fetch_array()){  
-						echo "<tr><td class=\"text-center\">$no</td>
-								<td>$r[pilihan]</td>
-								<td>$r[status]</td>
-								<td class=\"text-center\">$r[aktif]</td>
-								<td class=\"text-center\">$r[rating]</td>
-								<td class=\"text-center\"><a href=\"?module=polling&act=editpolling&id=$r[id_poling]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp; <a href=\"$aksi?module=polling&act=hapus&id=$r[id_poling]\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS DATA INI ?')\"><i class=\"fa fa-trash text-red\"></i></a></td>
-								</tr>";
-						$no++;
-					}
+					                    $no=1;
+                    while ($r=$tampil->fetch_array()){
+                    ?>
+                        <tr>
+                            <td class="text-center"><?php echo $no; ?></td>
+                            <td><?php echo e($r['pilihan']); ?></td>
+                            <td><?php echo e($r['status']); ?></td>
+                            <td class="text-center"><?php echo e($r['aktif']); ?></td>
+                            <td class="text-center"><?php echo e($r['rating']); ?></td>
+                            <td class="text-center">
+                                <form action="<?php echo $aksi; ?>?module=polling&act=hapus" method="POST" style="display:inline;">
+                                    <?php csrf_field(); ?>
+                                    <input type="hidden" name="id" value="<?php echo (int)$r['id_poling']; ?>">
+                                    <button type="submit"
+                                            onclick="return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS DATA INI ?');"
+                                            title="Hapus Data"
+                                            style="background:none;border:none;padding:0;">
+                                        <i class="fa fa-trash text-red"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php
+                        $no++;
+                    }
 					?>
                     </tbody>
                   </table>
@@ -68,6 +84,7 @@ else{
                   <h3 class="box-title">Tambah Polling</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=polling&act=input" class="form-horizontal">
+				<?php csrf_field(); ?>	
 					<div class="box-body">
 						<div class="form-group">
 							<label for="pilihan" class="col-sm-2 control-label">Pilihan</label>
@@ -101,6 +118,7 @@ else{
                   <h3 class="box-title">Edit Polling</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=polling&act=update" class="form-horizontal">
+					<?php csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo $r['id_poling']; ?>">
 					<div class="box-body">
 						<div class="form-group">

@@ -5,8 +5,9 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-  $aksi = "modul/mod_pengumuman/aksi_pengumuman.php";
-  function ubah_tgl2($tglnyo){
+	require_once __DIR__ . "/../../includes/bootstrap.php";
+  	$aksi = "modul/mod_pengumuman/aksi_pengumuman.php";
+ 	function ubah_tgl2($tglnyo){
 		$fm=explode('-',$tglnyo);
 		$tahun=$fm[0];
 		$bulan=$fm[1];
@@ -56,13 +57,27 @@ else{
 						$tampil = querydb($query);
 					}
 					$no=1;
-					while ($r=$tampil->fetch_array()){  
+					while ($r = $tampil->fetch_array()) {
 						$tgl_posting = tgl_indo($r['tgl_posting']);
-						echo "<tr><td>$no</td>
-							<td width=\"350\">$r[judul]</td>";
-						echo "<td align=\"center\">$tgl_posting</td>
-							<td align=\"center\"><a href=\"?module=pengumuman&act=editpengumuman&id=$r[id_pengumuman]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp; 
-							<a href=\"$aksi?module=pengumuman&act=hapus&id=$r[id_pengumuman]\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS PENGUMUMAN INI ?')\" title=\"Hapus Data\"><i class=\"fa fa-trash text-red\"></i></a></td>
+
+						echo "<tr><td>$no</td>";
+						echo "<td width=\"350\">" . e($r['judul']) . "</td>";
+						echo "<td align=\"center\">$tgl_posting</td>";
+						echo "<td align=\"center\">
+								<a href=\"?module=pengumuman&act=editpengumuman&id=".(int)$r['id_pengumuman']."\" title=\"Edit Data\">
+									<i class=\"fa fa-pencil\"></i>
+								</a> &nbsp;
+								<form method=\"POST\" action=\"$aksi?module=pengumuman&act=hapus\" style=\"display:inline;\">";
+									csrf_field();
+						echo       "<input type=\"hidden\" name=\"id\" value=\"".(int)$r['id_pengumuman']."\">
+									<button type=\"submit\"
+											onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS DATA INI ?')\"
+											title=\"Hapus Data\"
+											style=\"border:none;background:none;padding:0;cursor:pointer;\">
+										<i class=\"fa fa-trash text-red\"></i>
+									</button>
+								</form>
+							</td>
 							</tr>";
 						$no++;
 					}
@@ -81,6 +96,7 @@ else{
                   <h3 class="box-title">Tambah Pengumuman</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=pengumuman&act=input" class="form-horizontal" enctype="multipart/form-data">
+					<?php csrf_field(); ?>
 					<div class="box-body">
 						<div class="form-group">
 							<label for="tema" class="col-sm-2 control-label">Judul</label>
@@ -104,16 +120,21 @@ else{
 	break;
 	
 	case "editpengumuman":
-      if ($_SESSION['leveluser']=='admin'){
-        $query = "SELECT * FROM pengumuman WHERE id_pengumuman='$_GET[id]'";
-        $hasil = querydb($query);
-      }
-      else{
-        $query = "SELECT * FROM pengumuman WHERE id_pengumuman='$_GET[id]' AND username='$_SESSION[namauser]'";
-        $hasil = querydb($query);
-      }
+		$id = (int)($_GET['id'] ?? 0);
 
-      $r = $hasil->fetch_array();
+		if ($_SESSION['leveluser'] == 'admin') {
+			$stmt = $dbconnection->prepare("SELECT * FROM pengumuman WHERE id_pengumuman = ?");
+			$stmt->bind_param("i", $id);
+		} else {
+			$user = $_SESSION['namauser'];
+			$stmt = $dbconnection->prepare("SELECT * FROM pengumuman WHERE id_pengumuman = ? AND username = ?");
+			$stmt->bind_param("is", $id, $user);
+		}
+
+		$stmt->execute();
+		$hasil = $stmt->get_result();
+		$r = $hasil->fetch_array();
+
 
 ?>
 			<div class="box">
@@ -121,6 +142,7 @@ else{
                   <h3 class="box-title">Edit Pengumuman</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=pengumuman&act=update" class="form-horizontal" enctype="multipart/form-data">
+					<?php csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo $r['id_pengumuman']; ?>" />
 					<div class="box-body">
 						<div class="form-group">

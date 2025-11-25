@@ -5,8 +5,9 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-  $aksi = "modul/mod_agenda/aksi_agenda.php";
-  function ubah_tgl2($tglnyo){
+	require_once __DIR__ . "/../../includes/bootstrap.php";
+  	$aksi = "modul/mod_agenda/aksi_agenda.php";
+  	function ubah_tgl2($tglnyo){
 		$fm=explode('-',$tglnyo);
 		$tahun=$fm[0];
 		$bulan=$fm[1];
@@ -74,12 +75,12 @@ else{
 							echo "<td>$tgl_mulai s/d $tgl_selesai</td>";
 						}
 						echo "<td align=\"center\">$tgl_posting</td>
-							<td align=\"center\">
+								<td align=\"center\">
 								<a href=\"?module=agenda&act=editagenda&id=$r[id_agenda]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp;
 
-								<form method=\"POST\" action=\"$aksi?module=agenda&act=hapus\" style=\"display:inline;\">
-								" . csrf_field() . "
-								<input type=\"hidden\" name=\"id\" value=\"$r[id_agenda]\">
+								<form method=\"POST\" action=\"$aksi?module=agenda&act=hapus\" style=\"display:inline;\">";
+						csrf_field();
+						echo	"<input type=\"hidden\" name=\"id\" value=\"$r[id_agenda]\">
 								<button type=\"submit\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS AGENDA INI ?')\" title=\"Hapus Data\" style=\"border:none;background:none;padding:0;cursor:pointer;\">
 									<i class=\"fa fa-trash text-red\"></i>
 								</button>
@@ -103,6 +104,7 @@ else{
                   <h3 class="box-title">Tambah Agenda</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=agenda&act=input" class="form-horizontal" enctype="multipart/form-data">
+					<?php csrf_field(); ?>
 					<div class="box-body">
 						<div class="form-group">
 							<label for="tema" class="col-sm-2 control-label">Tema Acara</label>
@@ -186,6 +188,7 @@ else{
                   <h3 class="box-title">Edit Agenda</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=agenda&act=update" class="form-horizontal" enctype="multipart/form-data">
+					<?php csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo $r['id_agenda']; ?>" />
 					<div class="box-body">
 						<div class="form-group">

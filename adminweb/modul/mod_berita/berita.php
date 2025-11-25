@@ -158,16 +158,33 @@ else{
 	break;
 	
 	case "editberita":
-      if ($_SESSION['leveluser']=='admin'){
-        $query = "SELECT * FROM berita WHERE id_berita='$_GET[id]'";
-        $hasil = querydb($query);
-      }
-      else{
-        $query = "SELECT * FROM berita WHERE id_berita='$_GET[id]' AND username='$_SESSION[namauser]'";
-        $hasil = querydb($query);
-      }
+		// sanitasi id dari URL
+		$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+		if ($id <= 0) {
+			echo "<p>ID berita tidak valid.</p>";
+			break;
+		}
 
-      $r = $hasil->fetch_array();
+		if ($_SESSION['leveluser'] == 'admin') {
+			// admin boleh edit semua berita
+			$stmt = $dbconnection->prepare("SELECT * FROM berita WHERE id_berita = ?");
+			$stmt->bind_param("i", $id);
+		} else {
+			// user hanya boleh edit berita miliknya sendiri
+			$user = $_SESSION['namauser'] ?? '';
+			$stmt = $dbconnection->prepare("SELECT * FROM berita WHERE id_berita = ? AND username = ?");
+			$stmt->bind_param("is", $id, $user);
+		}
+
+		$stmt->execute();
+		$hasil = $stmt->get_result();
+		$r     = $hasil->fetch_array();
+		$stmt->close();
+
+		if (!$r) {
+			echo "<p>Data berita tidak ditemukan atau Anda tidak berhak mengedit data ini.</p>";
+			break;
+		}
 ?>
 			<div class="box">
                 <div class="box-header with-border">
