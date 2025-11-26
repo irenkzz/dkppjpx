@@ -11,7 +11,6 @@ else{
   require_once __DIR__ . '/../../includes/upload_helpers.php';
   include "../../../config/library.php";
   include "../../../config/fungsi_seo.php";
-  include "../../../config/fungsi_thumb.php";
   opendb();
 
   $module = $_GET['module'] ?? '';
@@ -135,6 +134,8 @@ else{
     $judul       = $_POST['judul'];
     $judul_seo   = seo_title($_POST['judul']);
     $isi_halaman = $_POST['isi_halaman'];
+     // Cek apakah ada file yang diupload saat update
+    $lokasi_file = $_FILES['fupload']['tmp_name'] ?? '';
 
     // Apabila gambar tidak diganti
     if (empty($lokasi_file)){
