@@ -1,13 +1,108 @@
 <?php 
+if (!function_exists('e')) {
+    function e(?string $s): string {
+        return htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8');
+    }
+}
+
 $ambiliden=querydb("SELECT * FROM identitas LIMIT 1");
 $tiden=$ambiliden->fetch_array();
 				
- function konversi_tanggal($format, $tanggal="now", $bahasa="id"){
-	$en=array("Sun","Mon","Tue","Wed","Thu","Fri","Sat","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Okt","Nov","Dec");
-	$id=array("Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu","Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des");
-	
-	return str_replace($en,$$bahasa,date($format,strtotime($tanggal)));
+function konversi_tanggal($format, $tanggal = "now", $bahasa = "id")
+{
+    // Map untuk berbagai bahasa
+    $translations = [
+        'id' => [
+            // Hari (pendek)
+            'Sun' => 'Minggu',
+            'Mon' => 'Senin',
+            'Tue' => 'Selasa',
+            'Wed' => 'Rabu',
+            'Thu' => 'Kamis',
+            'Fri' => 'Jumat',
+            'Sat' => 'Sabtu',
+
+            // Hari (panjang)
+            'Sunday'    => 'Minggu',
+            'Monday'    => 'Senin',
+            'Tuesday'   => 'Selasa',
+            'Wednesday' => 'Rabu',
+            'Thursday'  => 'Kamis',
+            'Friday'    => 'Jumat',
+            'Saturday'  => 'Sabtu',
+
+            // Bulan (pendek, sesuai keluaran date("M"))
+            'Jan' => 'Jan',
+            'Feb' => 'Feb',
+            'Mar' => 'Mar',
+            'Apr' => 'Apr',
+            'May' => 'Mei',
+            'Jun' => 'Jun',
+            'Jul' => 'Jul',
+            'Aug' => 'Agu',
+            'Sep' => 'Sep',
+            'Oct' => 'Okt',
+            'Nov' => 'Nov',
+            'Dec' => 'Des',
+
+            // Bulan (panjang, untuk format "F")
+            'January'   => 'Januari',
+            'February'  => 'Februari',
+            'March'     => 'Maret',
+            'April'     => 'April',
+            'May_long'  => 'Mei',       // trik kecil, lihat di bawah
+            'June'      => 'Juni',
+            'July'      => 'Juli',
+            'August'    => 'Agustus',
+            'September' => 'September',
+            'October'   => 'Oktober',
+            'November'  => 'November',
+            'December'  => 'Desember',
+        ],
+        // Tambah bahasa lain di sini misalnya 'en', 'jp', etc.
+    ];
+
+    // Ubah $tanggal ke timestamp
+    if (is_numeric($tanggal)) {
+        $timestamp = (int) $tanggal;
+    } else {
+        $timestamp = strtotime($tanggal);
+    }
+
+    if ($timestamp === false) {
+        // tanggal tidak valid, bisa juga return "" atau throw exception
+        return null;
+    }
+
+    $result = date($format, $timestamp);
+
+    // Kalau bahasa tidak dikenali, langsung return original
+    if (!isset($translations[$bahasa])) {
+        return $result;
+    }
+
+    $map = $translations[$bahasa];
+
+    /**
+     * Trik kecil:
+     * "May" bisa muncul sebagai:
+     *   - "May" (pendek) -> sudah di-map di atas
+     *   - "May" (panjang / F) -> tetap sama, tapi kita ingin "Mei"
+     * Untuk menghindari tabrakan key di array asosiatif, kita buat format khusus:
+     *   - Di string asli, kita ganti dulu "May" (bulan panjang) menjadi "May_long"
+     *   - Setelah itu strtr dengan mapping di atas (yang punya key 'May_long')
+     */
+    if (strpos($format, 'F') !== false) {
+        // hanya kalau ada F di format
+        $result = str_replace('May', 'May_long', $result);
+    }
+
+    // Ganti semua kata Inggris dengan padanan bahasa yang dipilih
+    $result = strtr($result, $map);
+
+    return $result;
 }
+
 function artikelTerkait($id){
 	//Batas threshold
 	$threshold = 40;
@@ -16,14 +111,23 @@ function artikelTerkait($id){
 	// Membaca judul artikel dari ID tertentu (ID artikel acuan)
 	// array yang nantinya diisi judul artikel terkait
 	$listArtikel = Array();
-	$query = "SELECT judul FROM berita WHERE id_berita = '$id'";
-	$hasil = querydb($query);
+
+	$id = (int)$id;
+	$hasil = querydb_prepared(
+        "SELECT judul FROM berita WHERE id_berita = ?",
+        "i",
+        [$id]
+    );
+    
 	$data  = $hasil->fetch_array();
 	$judul = $data['judul'];
 
 	// Membaca semua data artikel selain ID artikel acuan
-	$query = "SELECT * FROM berita WHERE id_berita <> '$id'";
-	$hasil = querydb($query);
+	$hasil = querydb_prepared(
+        "SELECT * FROM berita WHERE id_berita <> ?",
+        "i",
+        [$id]
+    );
 	while($data = $hasil->fetch_array()){
 		// Cek similaritas judul artikel acuan dengan judul artikel lainya
 		similar_text($judul, $data['judul'], $percent);
@@ -395,7 +499,7 @@ if ($_GET['module']=='home'){
 
 				<div class="tab-pane no-padding" id="agendakegiatan">
 					<ul class="media-list">
-						<?php 
+						<?php
 						$agenda = querydb("SELECT * FROM agenda ORDER BY id_agenda DESC LIMIT 5");
 						while($tgd=$agenda->fetch_array()){
 							$tgl_posting_raw = $tgd['tgl_posting']  ?? '';
@@ -408,32 +512,55 @@ if ($_GET['module']=='home'){
 
 							$isi_agenda  = nl2br($tgd['isi_agenda'] ?? '');
 
-							$rentang_tgl = $tgl_mulai && $tgl_selesai ? "$tgl_mulai s/d $tgl_selesai" : ($tgl_mulai ?: $tgl_selesai);
+							if ($tgl_mulai == $tgl_selesai){
+								$rentang_tgl = $tgl_mulai;
+							}
+							else{
+								$rentang_tgl = $tgl_mulai && $tgl_selesai ? "$tgl_mulai s/d $tgl_selesai" : ($tgl_mulai ?: $tgl_selesai);
+							}
 						?>
-						<li class="media space margin-bottom-20">
+						<li class="media agenda-item margin-bottom-20">
 							<div class="media-left">
-								<div class="event-date margin-bottom-5">
-									<p><?php echo konversi_tanggal("j",$tgd['tgl_posting']); ?> </p>
-									<small class="uppercase"><?php echo konversi_tanggal("M",$tgd['tgl_posting']); ?></small>
-								</div> <!-- .event-date -->
-							</div> <!-- .media-left -->
+								<div class="event-date">
+									<p><?php echo konversi_tanggal("j",$tgd['tgl_mulai']); ?></p>
+									<small class="month"><?php echo konversi_tanggal("M",$tgd['tgl_mulai']); ?></small>
+									<small class="year"><?php echo konversi_tanggal("Y",$tgd['tgl_mulai']); ?></small>
+								</div>
+							</div>
 
-							<div class="media-body">
-								<h5><b><?php echo $tgd['tema']; ?></b></h5>
+							<div class="media-body">	
+								<h5 class="agenda-title"><b><?php echo $tgd['tema']; ?></b></h5>
 
-								<ul class="list-inline small">
-									<li><b><i>
-										<i class="fa fa-calendar"></i> <?php echo $tgl_posting; ?></i></b><b><i>
-										<i class="fa fa-map-marker"></i> <?php echo $tgd['tempat']." - ".$rentang_tgl." Pukul ".$tgd['jam']; ?></i></b>
-										<b>
-										<i class="fa fa-user"></i> <?php echo $tgd['pengirim']; ?></b>
-										</li>
-									<li style="margin-top: 5px;">
-			                            <?php echo $isi_agenda; ?>
-									</li>
-								</ul>
-								</div> <!-- .media-body -->
+								<div class="agenda-meta small">
+
+									<div class="agenda-row">
+										<i class="fa fa-map-marker"></i>
+										<span><?php echo $tgd['tempat']; ?></span>
+									</div>
+									
+									<div class="agenda-row">
+										<i class="fa fa-calendar"></i>
+										<span><?php echo $rentang_tgl; ?></span>
+									</div>
+
+									<div class="agenda-row">
+										<i class="fa fa-clock-o"></i>
+										<span>Pukul <?php echo $tgd['jam']; ?></span>
+									</div>
+
+									<div class="agenda-row">
+										<i class="fa fa-user"></i>
+										<span><?php echo $tgd['pengirim']; ?></span>
+									</div>
+								</div>
+
+								<div class="agenda-desc small">
+									<?php echo $isi_agenda; ?>
+								</div>
+							</div>
 						</li>
+
+
 						<?php } ?>
 					</ul>
 				</div>
@@ -600,35 +727,64 @@ if ($_GET['module']=='home'){
  }
 //MODUL DETAIL BERITA 
 elseif($_GET['module']=='detailberita'){
-	$detail=querydb("SELECT * FROM berita,users,kategori    
-                      WHERE users.username=berita.username 
-                      AND kategori.id_kategori=berita.id_kategori 
-                      AND id_berita = '".abs((int)$_GET['id'])."'");
-	$d   = $detail->fetch_array();
-	$tgl = tgl_indo($d['tanggal']);
 
-	// Start session if not already started
-	if (session_status() === PHP_SESSION_NONE) {
-		session_start();
-	}
+	// Sanitasi & validasi ID dari URL
+    $id_berita = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-	$id_berita = abs((int)($_GET['id'] ?? 0));
+    if ($id_berita <= 0) {
+        // ID tidak valid
+        echo '<section class="site-content padding-bottom-0 margin-top-15">
+                <div class="container">
+                    <p>Berita tidak ditemukan.</p>
+                </div>
+              </section>';
+    } else {
 
-	// Check if this article ID is already in session
-	if (!isset($_SESSION['viewed_articles'])) {
-		$_SESSION['viewed_articles'] = [];
-	}
+        // Ambil data berita dengan prepared statement
+        $detail = querydb_prepared(
+            "SELECT * FROM berita, users, kategori    
+             WHERE users.username = berita.username 
+               AND kategori.id_kategori = berita.id_kategori 
+               AND id_berita = ?",
+            "i",
+            [$id_berita]
+        );
 
-	// Only increment if not viewed before in this session
-	if (!in_array($id_berita, $_SESSION['viewed_articles'])) {
-		exec_prepared("UPDATE berita SET dibaca = dibaca + 1 WHERE id_berita = ?", "i", [$id_berita]);
-		$_SESSION['viewed_articles'][] = $id_berita;
-	}
+        $d = $detail ? $detail->fetch_array() : null;
 
-	// update local value for display
-	$d['dibaca'] = (int)($d['dibaca'] ?? 0) + 1;
+        if (!$d) {
+            // ID valid tapi data tidak ada
+            echo '<section class="site-content padding-bottom-0 margin-top-15">
+                    <div class="container">
+                        <p>Berita tidak ditemukan.</p>
+                    </div>
+                  </section>';
+        } else {
+            // Data ditemukan → lanjut seperti biasa
+            $tgl = tgl_indo($d['tanggal']);
 
+            // Start session jika belum
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
 
+            // Proteksi counter "dibaca"
+            if (!isset($_SESSION['viewed_articles'])) {
+                $_SESSION['viewed_articles'] = [];
+            }
+
+            if (!in_array($id_berita, $_SESSION['viewed_articles'], true)) {
+                // Naikkan view di database
+                exec_prepared(
+                    "UPDATE berita SET dibaca = dibaca + 1 WHERE id_berita = ?",
+                    "i",
+                    [$id_berita]
+                );
+                $_SESSION['viewed_articles'][] = $id_berita;
+
+                // Sinkronkan nilai lokal untuk tampilan (kalau dipakai)
+                $d['dibaca'] = (int)($d['dibaca'] ?? 0) + 1;
+            }
 ?>
 <section class="site-content padding-bottom-0 margin-top-15">
 	<div class="container">
@@ -790,9 +946,11 @@ elseif($_GET['module']=='detailberita'){
 	</div>
 </section>
 <?php
+		}
+	}
 }
 
-// MODUDL HASIL POLLING
+// MODUL HASIL POLLING
 elseif($_GET['module']=='hasilpoling'){
 ?>
 <section class="site-content">
@@ -803,10 +961,20 @@ elseif($_GET['module']=='hasilpoling'){
    echo "<h3><center>Sorry, anda sudah pernah melakukan voting terhadap poling ini.</center></h3>";
  }
  else{
-  // membuat cookie dengan nama poling
-  // cookie akan secara otomatis terhapus dalam waktu 24 jam
-  setcookie("poling", "sudah poling", time() + 3600 * 24);
-  $u=querydb("UPDATE poling SET rating=rating+1 WHERE id_poling='$_POST[pilihan]'");
+
+   	// membuat cookie dengan nama poling
+   	// cookie akan secara otomatis terhapus dalam waktu 24 jam
+   	setcookie("poling", "sudah poling", time() + 3600 * 24);
+   	// amankan id_poling dari POST (cast ke integer + prepared statement)
+   	$id_pilihan = isset($_POST['pilihan']) ? (int)$_POST['pilihan'] : 0;
+   	if ($id_pilihan > 0) {
+		exec_prepared(
+        "UPDATE poling SET rating = rating + 1 WHERE id_poling = ?",
+        "i",
+        [$id_pilihan]
+		);
+	}
+
 ?>
 	  <div class="col-md-12 padding-bottom-20 left-column no-padding">
 		<div class="breadcrumb-wrapper bg-medium margin-bottom-20">
@@ -1124,9 +1292,21 @@ elseif ($_GET['module']=='halamanstatis'){
 }
 // MODUL BERITA PERKATEGORI
 elseif ($_GET['module']=='detailkategori'){
-	// Tampilkan nama kategori
-  $sq = querydb("SELECT nama_kategori from kategori where id_kategori='".$val->validasi($_GET['id'],'sql')."'");
-  $n = $sq->fetch_array();
+
+	// Tampilkan nama kategori (nama_kategori dari tabel kategori)
+    $id_kat = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    $n = ['nama_kategori' => ''];
+
+    if ($id_kat > 0) {
+        $rs_kat = querydb_prepared(
+            "SELECT nama_kategori FROM kategori WHERE id_kategori = ?",
+            "i",
+            [$id_kat]
+        );
+        if ($rs_kat) {
+            $n = $rs_kat->fetch_array();
+        }
+    }
 ?>
 <section class="site-content">
 	<div class="container">
@@ -1148,16 +1328,16 @@ elseif ($_GET['module']=='detailkategori'){
 					</div> <!-- .container -->
 				</div> <!-- .breadcrumb-wrapper -->
 				<div class="row">		
-					<?php 
-					  $p      = new Paging3;
-					  $batas  = 10;
-					  $posisi = $p->cariPosisi($batas);
-					  
-					  // Tampilkan daftar berita sesuai dengan kategori yang dipilih
-					 	$sql   = "SELECT * FROM berita WHERE id_kategori='".$val->validasi($_GET['id'],'sql')."' 
-					            ORDER BY id_berita DESC LIMIT $posisi,$batas";		 
-						$hasil = querydb($sql);
-						$jumlah = $hasil->num_rows;
+					<?php
+					$p      = new Paging3;
+					$batas  = 10;
+					$posisi = $p->cariPosisi($batas);
+
+					// Tampilkan daftar berita sesuai dengan kategori yang dipilih
+					$sql   = "SELECT * FROM berita WHERE id_kategori=".$id_kat." 
+							ORDER BY id_berita DESC LIMIT $posisi,$batas";
+					$hasil = querydb($sql);
+					$jumlah = $hasil->num_rows;
 						// Apabila ditemukan berita dalam kategori
 						if ($jumlah > 0){
 					   while($r=$hasil->fetch_array()){
@@ -1198,7 +1378,7 @@ elseif ($_GET['module']=='detailkategori'){
 						 <?php
 						 }
 						
-					  $jmldata     = querydb("SELECT * FROM berita WHERE id_kategori='".$val->validasi($_GET['id'],'sql')."'")->num_rows;
+					  $jmldata     = querydb("SELECT * FROM berita WHERE id_kategori=".$id_kat)->num_rows;
 					  $jmlhalaman  = $p->jumlahHalaman($jmldata, $batas);
 					  $linkHalaman = $p->navHalaman($_GET['halkategori'], $jmlhalaman);
 
@@ -1246,7 +1426,7 @@ elseif ($_GET['module']=='semuapengumuman'){
 				  $p      = new PagingPengumuman;
 				  $batas  = 10;
 				  $posisi = $p->cariPosisi($batas); 
-				  // Tampilkan semua agenda
+				  // Tampilkan semua pengumuman
 				 	$sql = querydb("SELECT * FROM pengumuman  
 				                      ORDER BY id_pengumuman DESC LIMIT $posisi,$batas");		 
 				  while($d=$sql->fetch_array()){
@@ -1281,7 +1461,7 @@ elseif ($_GET['module']=='semuapengumuman'){
 				          <?php
 					 }
 					
-				  $jmldata     = querydb("SELECT * FROM agenda")->num_rows;
+				  $jmldata     = querydb("SELECT * FROM pengumuman")->num_rows;
 				  $jmlhalaman  = $p->jumlahHalaman($jmldata, $batas);
 				  $linkHalaman = $p->navHalaman($_GET['halpengumuman'], $jmlhalaman);
 				  echo "<div class='col-md-12 col-sm-12 col-xs-12 text-center'>
@@ -1325,9 +1505,9 @@ elseif ($_GET['module']=='semuaagenda'){
 				  $batas  = 6;
 				  $posisi = $p->cariPosisi($batas); 
 				  // Tampilkan semua agenda
-				 	$sql = querydb("SELECT * FROM agenda  
-				                      ORDER BY id_agenda DESC LIMIT $posisi,$batas");		 
-				  while($d=$sql->fetch_array()){
+				  $sql = querydb("SELECT * FROM agenda 
+				  					ORDER BY id_agenda DESC LIMIT $posisi,$batas");		 
+				  while($tgd=$sql->fetch_array()){
 				    $tgl_posting_raw = $tgd['tgl_posting']  ?? '';
 					$tgl_mulai_raw   = $tgd['tgl_mulai']    ?? '';
 					$tgl_selesai_raw = $tgd['tgl_selesai']  ?? '';
@@ -1338,37 +1518,62 @@ elseif ($_GET['module']=='semuaagenda'){
 
 					$isi_agenda  = nl2br($tgd['isi_agenda'] ?? '');
 
-					$rentang_tgl = $tgl_mulai && $tgl_selesai ? "$tgl_mulai s/d $tgl_selesai" : ($tgl_mulai ?: $tgl_selesai);
-				    
-				    ?>
-				          <div class="col-md-12 col-sm-12 col-xs-12 masonry-grid-item no-padding">
-						<article class="content-box box-img bg-light box-clickable media">
-							<div class="box-body media">
-								<div class="media-left">
-									<div class="event-date margin-bottom-5">
-										<p><?php echo konversi_tanggal("j",$d['tgl_posting']); ?></p>
-										<small class="uppercase"><?php echo konversi_tanggal("M",$d['tgl_posting']); ?></small>
+					if ($tgl_mulai == $tgl_selesai){
+						$rentang_tgl = $tgl_mulai;
+					}
+					else{
+						$rentang_tgl = $tgl_mulai && $tgl_selesai ? "$tgl_mulai s/d $tgl_selesai" : ($tgl_mulai ?: $tgl_selesai);
+					}
+				?>
+				        <div class="col-md-12 col-sm-12 col-xs-12 masonry-grid-item no-padding">
+							<article class="content-box box-img bg-light box-clickable media agenda-item">
+								<div class="box-body media">
+
+									<!-- TANGGAL -->
+									<div class="media-left">
+										<div class="event-date">
+											<p><?php echo konversi_tanggal("j",$tgd['tgl_mulai']); ?></p>
+											<small class="month"><?php echo konversi_tanggal("M",$tgd['tgl_mulai']); ?></small>
+											<small class="year"><?php echo konversi_tanggal("Y",$tgd['tgl_mulai']); ?></small>
+										</div>
 									</div>
-								</div> <!-- .media-left -->
 
-								<div class="media-body">
-								<h5><b><?php echo $d['tema']; ?></b></h5>
+									<!-- ISI AGENDA -->
+									<div class="media-body">	
+										<h5 class="agenda-title"><b><?php echo $tgd['tema']; ?></b></h5>
 
-								<ul class="list-inline small">
-									<li><b><i>
-										<i class="fa fa-calendar"></i> <?php echo $tgl_posting; ?></i></b><b><i>
-										<i class="fa fa-map-marker"></i> <?php echo $d['tempat']." - ".$rentang_tgl." Pukul ".$d['jam']; ?></i></b>
-										<b>
-										<i class="fa fa-user"></i> <?php echo $d['pengirim']; ?></b>
-										</li>
-									<li style="margin-top: 5px;">
-			                            <?php echo $isi_agenda; ?>
-									</li>
-								</ul>
+										<div class="agenda-meta small">
+
+											<div class="agenda-row">
+												<i class="fa fa-map-marker"></i>
+												<span><?php echo $tgd['tempat']; ?></span>
+											</div>
+											
+											<div class="agenda-row">
+												<i class="fa fa-calendar"></i>
+												<span><?php echo $rentang_tgl; ?></span>
+											</div>
+
+											<div class="agenda-row">
+												<i class="fa fa-clock-o"></i>
+												<span>Pukul <?php echo $tgd['jam']; ?></span>
+											</div>
+
+											<div class="agenda-row">
+												<i class="fa fa-user"></i>
+												<span><?php echo $tgd['pengirim']; ?></span>
+											</div>
+										</div>
+
+										<div class="agenda-desc small">
+											<?php echo $isi_agenda; ?>
+										</div>
+									</div>
+
 								</div>
-							</div>
-						</article>
-					</div>
+							</article>
+						</div>
+
 				          <?php
 					 }
 					
@@ -1390,10 +1595,38 @@ elseif ($_GET['module']=='semuaagenda'){
 }
 // MODUL DETAIL PENGUMUMAN
 elseif ($_GET['module']=='detailpengumuman'){
-	$detail=querydb("SELECT * FROM pengumuman,users 
-                      WHERE pengumuman.username=users.username AND id_pengumuman='".$val->validasi($_GET['id'],'sql')."'");
-	$d   = $detail->fetch_array();
-  	$tgl_posting   = tgl_indo($d['tgl_posting']);
+	 // Sanitize and validate ID
+    $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+
+    if ($id <= 0) {
+        echo '<section class="site-content"><div class="container">
+                <p>Pengumuman tidak ditemukan.</p>
+              </div></section>';
+    } else {
+
+        // Use prepared statement
+        $detail = querydb_prepared(
+            "SELECT pengumuman.*, users.nama_lengkap 
+             FROM pengumuman 
+             LEFT JOIN users ON pengumuman.username = users.username
+             WHERE id_pengumuman = ?",
+            "i",
+            [$id]
+        );
+
+        $d = $detail ? $detail->fetch_array() : null;
+
+        if (!$d) {
+            echo '<section class="site-content"><div class="container">
+                    <p>Pengumuman tidak ditemukan.</p>
+                  </div></section>';
+        } else {
+            $tgl_posting = tgl_indo($d['tgl_posting'] ?? '');
+
+            // SAFE OUTPUT
+            $judul   = e($d['judul'] ?? '');
+            $penulis = e($d['nama_lengkap'] ?? '');
+            $gambar  = e($d['gambar'] ?? '');
 ?>
 <section class="site-content padding-bottom-0 margin-top-15">
 	<div class="container">
@@ -1489,7 +1722,9 @@ elseif ($_GET['module']=='detailpengumuman'){
 		</div>
 	</div>
 </section>
-<?php         
+<?php
+		}
+	}
 }
 // Modul semua download
 elseif ($_GET['module']=='semuadownload'){
@@ -1514,46 +1749,42 @@ elseif ($_GET['module']=='semuadownload'){
 					</div> <!-- .container -->
 				</div>
 				<div class="row">
-				<?php 
+				<?php
 				  $p      = new Paging5;
 				  $batas  = 10;
 				  $posisi = $p->cariPosisi($batas);
 				  // Tampilkan semua download
 				 	$sql = querydb("SELECT * FROM download  
 				                      ORDER BY id_download DESC LIMIT $posisi,$batas");			 
-				  while($d=$sql->fetch_array()){
-				    $tgl_posting_raw = $tgd['tgl_posting']  ?? '';
-					$tgl_mulai_raw   = $tgd['tgl_mulai']    ?? '';
-					$tgl_selesai_raw = $tgd['tgl_selesai']  ?? '';
+				                    while ($d = $sql->fetch_array()) {
+                    // Sanitasi data untuk output
+                    $judul = e($d['judul'] ?? '');
+                    $file  = isset($d['nama_file']) ? urlencode($d['nama_file']) : '';
+                    $hits  = (int)($d['hits'] ?? 0);
+                ?>
+                    <div class="col-md-12 col-sm-12 col-xs-12 masonry-grid-item no-padding">
+                        <article class="content-box box-img bg-light box-clickable media">
+                            <div class="box-body media">
+                                <div class="media-left">
+                                    <div class="event-date margin-bottom-5">
+                                        <img src="images/attachment.jpg" width="100%" />
+                                    </div>
+                                </div>
+                                <div class="media-body">
+                                    <h5><b><?php echo $judul; ?></b></h5>
+                                    <ul class="list-inline small">
+                                        <li><b><a href="downlot.php?file=<?php echo $file; ?>">
+                                            <i class="fa fa-download"></i>
+                                            <?php echo " Telah di download sebanyak ($hits) kali"; ?>
+                                        </a></b></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                    <?php
+                  }
 
-					$tgl_posting = tgl_indo($tgl_posting_raw);
-					$tgl_mulai   = tgl_indo($tgl_mulai_raw);
-					$tgl_selesai = tgl_indo($tgl_selesai_raw);
-
-					$isi_agenda  = nl2br($tgd['isi_agenda'] ?? '');
-
-					$rentang_tgl = $tgl_mulai && $tgl_selesai ? "$tgl_mulai s/d $tgl_selesai" : ($tgl_mulai ?: $tgl_selesai);
-				    ?>
-				    <div class="col-md-12 col-sm-12 col-xs-12 masonry-grid-item no-padding">
-						<article class="content-box box-img bg-light box-clickable media">
-							<div class="box-body media">
-								<div class="media-left">
-									<div class="event-date margin-bottom-5">
-										<img src="images/attachment.jpg" width="100%" />
-									</div>
-								</div>
-								<div class="media-body">
-									<h5><b><?php echo $d['judul']; ?></b></h5>
-									<ul class="list-inline small">
-										<li><b><a href="downlot.php?file=<?php echo $d['nama_file']; ?>">
-											<i class="fa fa-download"></i> <?php echo " Telah di download sebanyak (".$d['hits'].") kali"; ?></a></b></li>
-									</ul>
-								</div>
-							</div>
-						</article>
-					</div>
-				          <?php
-					 }
 					
 				  $jmldata     = querydb("SELECT * FROM download")->num_rows;
 				  $jmlhalaman  = $p->jumlahHalaman($jmldata, $batas);
@@ -1573,7 +1804,8 @@ elseif ($_GET['module']=='semuadownload'){
 }
 // Modul Detail Album (Lihat Gallery)
 elseif ($_GET['module']=='detailalbum'){
-	$ambilalbum=querydb("SELECT * FROM album WHERE id_album='".$val->validasi($_GET['id'],'sql')."'");
+	$id = (int)($_GET['id'] ?? 0);
+	$ambilalbum = querydb_prepared("SELECT * FROM album WHERE id_album = ?", "i", [$id]);
 	$dalb=$ambilalbum->fetch_array();
 ?>
 <section class="site-content">
@@ -1598,7 +1830,7 @@ elseif ($_GET['module']=='detailalbum'){
 					</div> <!-- .container -->
 				</div> <!-- .breadcrumb-wrapper -->
 
-				<h1 class="margin-top-15"><?php echo $dalb['jdl_album']; ?></h1>
+				<h1 class="margin-top-15"><?php echo e($dalb['jdl_album']); ?></h1>
 				<style type="text/css">
 					img.gambarnya {
 					    cursor: zoom-in;
@@ -1625,14 +1857,18 @@ elseif ($_GET['module']=='detailalbum'){
 						  $batas  = 10;
 						  $posisi = $p->cariPosisi($batas);
 
-						  $g = querydb("SELECT * FROM gallery WHERE id_album='".$val->validasi($_GET['id'],'sql')."' ORDER BY id_gallery DESC LIMIT $posisi,$batas");
+						  $g = querydb("SELECT * FROM gallery WHERE id_album=".$id." ORDER BY id_gallery DESC LIMIT $posisi,$batas");
+
   						  $ada = $g->num_rows;
   						  if ($ada > 0) {
   						  while ($w = $g->fetch_array()) {
+							$foto  = e($w['gbr_gallery'] ?? '');
+							$judul = e($w['jdl_gallery'] ?? '');
+							$ket   = e($w['keterangan'] ?? '');
 						?>
 						<div class="col-md-6">
 							<figure  class="wp-caption margin-bottom-15">
-														<img style="width: 400px;height: 210px;" class="gambarnya size-medium img-responsive img-thumbnail" src="img_galeri/<?php echo $w['gbr_gallery']; ?>" alt="<?php echo $w['jdl_gallery']; ?>" title="<?php echo $w['keterangan']; ?>"/>
+														<img style="width: 400px;height: 210px;" class="gambarnya size-medium img-responsive img-thumbnail" src="img_galeri/<?php echo $foto; ?>" alt="<?php echo $judul; ?>" title="<?php echo $ket; ?>"/>
 							</figure>
 						</div>						
 						<?php }
@@ -1640,9 +1876,9 @@ elseif ($_GET['module']=='detailalbum'){
 						else{
 							echo "<h3><center>Belum ada foto pada gallery ini</center></h3>";
 						}
-						  $jmldata     = querydb("SELECT * FROM gallery WHERE id_album='".$val->validasi($_GET['id'],'sql')."'")->num_rows;
-						  $jmlhalaman  = $p->jumlahHalaman($jmldata, $batas);
-						  $linkHalaman = $p->navHalaman($_GET['halgaleri'], $jmlhalaman);	
+							$jmldata     = querydb("SELECT * FROM gallery WHERE id_album=".$id)->num_rows;
+						  	$jmlhalaman  = $p->jumlahHalaman($jmldata, $batas);
+						  	$linkHalaman = $p->navHalaman($_GET['halgaleri'], $jmlhalaman);	
 						?>					
 				</div><!-- .row -->
 				
@@ -1851,52 +2087,62 @@ elseif ($_GET['module']=='hubungiaksi'){
 					<div class="col-md-12 col-sm-12 no-padding">
 						<div class="well">
 <?php
-$nama=trim($_POST['nama']);
-$email=trim($_POST['email']);
-$subjek=trim($_POST['subjek']);
-$pesan=trim($_POST['pesan']);
+// Ambil data kiriman form dengan aman
+    $nama   = trim($_POST['nama']   ?? '');
+    $email  = trim($_POST['email']  ?? '');
+    $subjek = trim($_POST['subjek'] ?? '');
+    $pesan  = trim($_POST['pesan']  ?? '');
+    $kode   = $_POST['kode']        ?? '';
 
-if (empty($nama)){
-  echo "Anda belum mengisikan NAMA<br />
-  	      <a href=javascript:history.go(-1)><b>Ulangi Lagi</b>";
-}
-elseif (empty($email)){
-  echo "Anda belum mengisikan EMAIL<br />
-  	      <a href=javascript:history.go(-1)><b>Ulangi Lagi</b>";
-}
-elseif (empty($subjek)){
-  echo "Anda belum mengisikan SUBJEK<br />
-  	      <a href=javascript:history.go(-1)><b>Ulangi Lagi</b>";
-}
-elseif (empty($pesan)){
-  echo "Anda belum mengisikan PESAN<br />
-  	      <a href=javascript:history.go(-1)><b>Ulangi Lagi</b>";
-}
-else{
-	if(!empty($_POST['kode'])){
-		if($_POST['kode']==$_SESSION['captcha_session']){
+    // Cek captcha dulu
+    if ($kode != ($_SESSION['captcha_session'] ?? '')) {
+        echo "<section class=\"site-content\"><div class=\"container\">
+                <p>Kode keamanan yang Anda masukkan salah. Silakan ulangi kembali.</p>
+              </div></section>";
+    } else {
 
-  querydb("INSERT INTO hubungi(nama_pengirim,
-                                   email,
-                                   subjek,
-                                   pesan,
-                                   tanggal) 
-                        VALUES('$_POST[nama]',
-                               '$_POST[email]',
-                               '$_POST[subjek]',
-                               '$_POST[pesan]',
-                               '$tgl_sekarang')");
-  echo "<span class=posting>&#187; <b>Hubungi Kami</b></span><br /><br />"; 
-  echo "<p align=center><b>Terimakasih telah menghubungi kami. <br /> Kami akan segera meresponnya.</b></p>";
-		}else{
-			echo "Kode yang Anda masukkan tidak cocok<br />
-			      <a href=javascript:history.go(-1)><b>Ulangi Lagi</b></a>";
-		}
-	}else{
-		echo "Anda belum memasukkan kode<br />
-  	      <a href=javascript:history.go(-1)><b>Ulangi Lagi</b></a>";
-	}
-}
+        // Validasi sederhana
+        if ($nama === '' || $email === '' || $subjek === '' || $pesan === '') {
+            echo "<section class=\"site-content\"><div class=\"container\">
+                    <p>Semua field wajib diisi. Silakan lengkapi data Anda.</p>
+                  </div></section>";
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            echo "<section class=\"site-content\"><div class=\"container\">
+                    <p>Alamat email tidak valid. Silakan periksa kembali.</p>
+                  </div></section>";
+        } else {
+            // Batasi panjang supaya tidak jebol kolom DB
+            $nama   = mb_substr($nama,   0, 100);
+            $email  = mb_substr($email,  0, 150);
+            $subjek = mb_substr($subjek, 0, 150);
+            $pesan  = mb_substr($pesan,  0, 2000);
+
+            $tgl_sekarang = date("Y-m-d");
+
+            // Gunakan prepared statement, bukan interpolasi langsung
+            global $dbconnection; // dari config/koneksi.php
+
+            $stmt = $dbconnection->prepare("
+                INSERT INTO hubungi (nama_pengirim, email, subjek, pesan, tanggal)
+                VALUES (?, ?, ?, ?, ?)
+            ");
+            if ($stmt) {
+                $stmt->bind_param("sssss", $nama, $email, $subjek, $pesan, $tgl_sekarang);
+                $stmt->execute();
+                $stmt->close();
+
+                echo "<section class=\"site-content\"><div class=\"container\">
+                        <p>Terima kasih <strong>".htmlspecialchars($nama, ENT_QUOTES, 'UTF-8')."</strong>, pesan Anda sudah kami terima.</p>
+                      </div></section>";
+            } else {
+                // fallback kalau prepare gagal
+                echo "<section class=\"site-content\"><div class=\"container\">
+                        <p>Terjadi kesalahan saat menyimpan pesan. Silakan coba beberapa saat lagi.</p>
+                      </div></section>";
+            }
+        }
+    }
+
 ?>
 						</div>
 					</div> 
@@ -1941,29 +2187,49 @@ elseif ($_GET['module']=='hasilcari'){
 					<div class="col-md-12 col-sm-12 no-padding">
 						<div class="well">
 <?php
-  // menghilangkan spasi di kiri dan kanannya
-  $kata = trim($_POST['kata']);
-  // mencegah XSS
-  $kata = htmlentities(htmlspecialchars($kata), ENT_QUOTES);
+  // Ambil kata kunci dari form
+    $kata = trim($_POST['kata'] ?? '');
+    // Simpan versi bersih untuk ditampilkan di HTML
+    $kata_tampil = htmlspecialchars($kata, ENT_QUOTES, 'UTF-8');
 
-  // pisahkan kata per kalimat lalu hitung jumlah kata
-  $pisah_kata = explode(" ",$kata);
-  $jml_katakan = (integer)count($pisah_kata);
-  $jml_kata = $jml_katakan-1;
+    // Normalisasi spasi dan pecah jadi kata-kata
+    $pisah_kata = preg_split('/\s+/', $kata, -1, PREG_SPLIT_NO_EMPTY);
 
-  $cari = "SELECT * FROM berita WHERE " ;
-    for ($i=0; $i<=$jml_kata; $i++){
-      $cari .= "judul OR isi_berita LIKE '%$pisah_kata[$i]%'";
-      if ($i < $jml_kata ){
-        $cari .= " OR ";
-      }
+    // Jika tidak ada kata kunci, langsung tampilkan pesan dan hentikan query
+    if (!$pisah_kata) {
+        $hasil  = null;
+        $ketemu = 0;
+    } else {
+        // Bangun query pencarian dengan prepared statement
+        // (judul LIKE ? OR isi_berita LIKE ?) untuk setiap kata
+        $conditions = [];
+        $params     = [];
+        $types      = '';
+
+        foreach ($pisah_kata as $kw) {
+            // batasi panjang keyword biar tidak berlebihan
+            $kw = mb_substr($kw, 0, 100);
+            $conditions[] = "(judul LIKE ? OR isi_berita LIKE ?)";
+            $like = '%'.$kw.'%';
+            $params[] = $like;
+            $params[] = $like;
+            $types   .= 'ss';
+        }
+
+        $sql = "
+            SELECT * FROM berita
+            WHERE ".implode(' OR ', $conditions)."
+            ORDER BY id_berita DESC
+            LIMIT 7
+        ";
+
+        // Gunakan helper prepared (sesuai pola yang sudah kita pakai di halaman statis)
+        $hasil = querydb_prepared($sql, $types, $params);
+        $ketemu = $hasil ? $hasil->num_rows : 0;
     }
-  $cari .= " ORDER BY id_berita DESC LIMIT 7";
-  $hasil  = querydb($cari);
-  $ketemu = $hasil->num_rows;
 
   if ($ketemu > 0){
-    echo "<p>Ditemukan <b>$ketemu</b> berita dengan kata <font style='background-color:#00FFFF'><b>$kata</b></font> : </p>"; 
+    echo "<p>Ditemukan <b>$ketemu</b> berita dengan kata <font style='background-color:#00FFFF'><b>$kata_tampil</b></font> : </p>"; 
     while($t=$hasil->fetch_array()){
 		echo "<table><tr><td><span class=judul><a href=baca-berita-$t[id_berita]-$t[judul_seo].html>$t[judul]</a></span><br />";
       // Tampilkan hanya sebagian isi berita
@@ -1977,7 +2243,7 @@ elseif ($_GET['module']=='hasilcari'){
     }                                                          
   }
   else{
-    echo "<p></p><p align=center>Tidak ditemukan berita dengan kata <b>$kata</b></p>";
+    echo "<p></p><p align=center>Tidak ditemukan berita dengan kata <b>$kata_tampil</b></p>";
   }
 ?>
 		</div>

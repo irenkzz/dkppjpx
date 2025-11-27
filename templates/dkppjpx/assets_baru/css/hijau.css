@@ -1133,3 +1133,87 @@ div.content-box.featured-news.jajak-pendapat {
 	color: #fff;
 	font-size: 13px;
 }
+
+/* === CARD AGENDA UTAMA === */
+.agenda-item {
+    padding: 15px 15px 20px 0;
+    border-bottom: 1px solid #e6e6e6;
+}
+
+.agenda-item:last-child {
+    border-bottom: none;
+}
+
+/* === KOTAK TANGGAL === */
+.event-date {
+    width: 70px;
+    text-align: center;
+    background: #f3f7ff;
+    border: 1px solid #c8d9f1;
+    border-radius: 6px;
+    padding: 8px 0;
+}
+
+.event-date p {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+    color: #0050b3;
+}
+
+.event-date .month {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #2b7cd3;
+    letter-spacing: 1px;
+}
+
+.event-date .year {
+    display: block;
+    font-size: 11px;
+    color: #777;
+}
+
+/* === JUDUL === */
+.agenda-title {
+    margin-top: 0;
+    margin-bottom: 5px;
+    line-height: 1.3;
+}
+
+/* === META INFO === */
+.agenda-meta {
+    margin-bottom: 8px;
+}
+
+.agenda-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 3px;
+    color: #444;
+}
+
+.agenda-row i {
+    width: 16px;
+    margin-right: 5px;
+    color: #2b7cd3;
+}
+
+/* === DESKRIPSI === */
+.agenda-desc {
+    color: #444;
+    line-height: 1.5;
+    margin-top: 8px;
+}
+
+/* RESPONSIVE */
+@media(max-width: 768px){
+    .event-date {
+        width: 60px;
+    }
+}
+
+#agendakegiatan .media-list {
+    padding: 20px;
+}

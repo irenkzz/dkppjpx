@@ -84,8 +84,8 @@
 	<div class="tab-content bg-light social-tabs no-border no-padding">
 		<div class="tab-pane no-padding active" id="agendakegiatan">
 					<ul class="media-list">
-						<?php 
-						$agenda = querydb("SELECT * FROM agenda ORDER BY id_agenda DESC LIMIT 3");
+						<?php
+						$agenda = querydb("SELECT * FROM agenda ORDER BY id_agenda DESC LIMIT 5");
 						while($tgd=$agenda->fetch_array()){
 							$tgl_posting_raw = $tgd['tgl_posting']  ?? '';
 							$tgl_mulai_raw   = $tgd['tgl_mulai']    ?? '';
@@ -97,31 +97,52 @@
 
 							$isi_agenda  = nl2br($tgd['isi_agenda'] ?? '');
 
-							$rentang_tgl = $tgl_mulai && $tgl_selesai ? "$tgl_mulai s/d $tgl_selesai" : ($tgl_mulai ?: $tgl_selesai);
+							if ($tgl_mulai == $tgl_selesai){
+								$rentang_tgl = $tgl_mulai;
+							}
+							else{
+								$rentang_tgl = $tgl_mulai && $tgl_selesai ? "$tgl_mulai s/d $tgl_selesai" : ($tgl_mulai ?: $tgl_selesai);
+							}
 						?>
-						<li class="media space margin-bottom-20">
+						<li class="media agenda-item margin-bottom-20">
 							<div class="media-left">
-								<div class="event-date margin-bottom-5">
-									<p><?php echo konversi_tanggal("j",$tgd['tgl_posting']); ?> </p>
-									<small class="uppercase"><?php echo konversi_tanggal("M",$tgd['tgl_posting']); ?></small>
-								</div> <!-- .event-date -->
-							</div> <!-- .media-left -->
+								<div class="event-date">
+									<p><?php echo konversi_tanggal("j",$tgd['tgl_mulai']); ?></p>
+									<small class="month"><?php echo konversi_tanggal("M",$tgd['tgl_mulai']); ?></small>
+									<small class="year"><?php echo konversi_tanggal("Y",$tgd['tgl_mulai']); ?></small>
+								</div>
+							</div>
 
-							<div class="media-body">
-								<h5><b><?php echo $tgd['tema']; ?></b></h5>
+							<div class="media-body">	
+								<h5 class="agenda-title"><b><?php echo $tgd['tema']; ?></b></h5>
 
-								<ul class="list-inline small">
-									<li><b><i>
-										<i class="fa fa-calendar"></i> <?php echo $tgl_posting; ?></i></b><b><i>
-										<i class="fa fa-map-marker"></i> <?php echo $tgd['tempat']." - ".$rentang_tgl." Pukul ".$tgd['jam']; ?></i></b>
-										<b>
-										<i class="fa fa-user"></i> <?php echo $tgd['pengirim']; ?></b>
-										</li>
-									<li style="margin-top: 5px;">
-			                            <?php echo $isi_agenda; ?>
-									</li>
-								</ul>
-								</div> <!-- .media-body -->
+								<div class="agenda-meta small">
+
+									<div class="agenda-row">
+										<i class="fa fa-map-marker"></i>
+										<span><?php echo $tgd['tempat']; ?></span>
+									</div>
+									
+									<div class="agenda-row">
+										<i class="fa fa-calendar"></i>
+										<span><?php echo $rentang_tgl; ?></span>
+									</div>
+
+									<div class="agenda-row">
+										<i class="fa fa-clock-o"></i>
+										<span>Pukul <?php echo $tgd['jam']; ?></span>
+									</div>
+
+									<div class="agenda-row">
+										<i class="fa fa-user"></i>
+										<span><?php echo $tgd['pengirim']; ?></span>
+									</div>
+								</div>
+
+								<div class="agenda-desc small">
+									<?php echo $isi_agenda; ?>
+								</div>
+							</div>
 						</li>
 						<?php } ?>
 					</ul>
