@@ -110,7 +110,7 @@ function artikelTerkait($id){
 	$maksArtikel = 5;
 	// Membaca judul artikel dari ID tertentu (ID artikel acuan)
 	// array yang nantinya diisi judul artikel terkait
-	$listArtikel = Array();
+	$listArtikel = [];
 
 	$id = (int)$id;
 	$hasil = querydb_prepared(
@@ -119,8 +119,13 @@ function artikelTerkait($id){
         [$id]
     );
     
-	$data  = $hasil->fetch_array();
-	$judul = $data['judul'];
+	$data = $hasil ? $hasil->fetch_array() : null;
+	if (!$data) {
+        echo "<p><center>Tidak ada artikel terkait</center></p>";
+        return;
+    }
+
+    $judulAcuan = $data['judul'] ?? '';
 
 	// Membaca semua data artikel selain ID artikel acuan
 	$hasil = querydb_prepared(
@@ -128,27 +133,35 @@ function artikelTerkait($id){
         "i",
         [$id]
     );
-	while($data = $hasil->fetch_array()){
-		// Cek similaritas judul artikel acuan dengan judul artikel lainya
-		similar_text($judul, $data['judul'], $percent);
-		if($percent >= $threshold){
-			// Jika prosentase kemiripan judul di atas threshold
-			if(count($listArtikel) <= $maksArtikel){
-				// jika jumlah artikel belum sampai batas maksimum, tambahkan
-				$listArtikel[] = "<a href='baca-berita-".$data['id_berita']."-".$data['judul_seo'].".html' class='list-group-item'><h4 class='list-group-item-heading'>".$data['judul']."</h4></a>";
-			}
-		}
-	}
-	if(count($listArtikel)>0){
-		echo "<div class='list-group margin-top-0'>";
-		for($i=0;$i<=count($listArtikel)-1;$i++){
-			echo $listArtikel[$i];
-		}
-		echo "</div>";
-	} 
-	else{
-		echo "<p><center>Tidak ada artikel terkait</center></p>";
-	} 
+
+	 while ($row = $hasil->fetch_array()) {
+        $judul    = $row['judul'] ?? '';
+        $judulSeo = $row['judul_seo'] ?? '';
+        $idBerita = (int)$row['id_berita'];
+
+        similar_text($judulAcuan, $judul, $percent);
+
+        if ($percent >= $threshold && count($listArtikel) < $maksArtikel) {
+            $safeTitle = e($judul);
+            $safeSlug  = e($judulSeo); // atau rawurlencode($judulSeo) kalau mau extra aman
+            $url       = "baca-berita-{$idBerita}-{$safeSlug}.html";
+
+            $listArtikel[] =
+                "<a href='{$url}' class='list-group-item'>"
+              . "  <h4 class='list-group-item-heading'>{$safeTitle}</h4>"
+              . "</a>";
+        }
+    }
+
+	if (count($listArtikel) > 0) {
+        echo "<div class='list-group margin-top-0'>";
+        foreach ($listArtikel as $html) {
+            echo $html;
+        }
+        echo "</div>";
+    } else {
+        echo "<p><center>Tidak ada artikel terkait</center></p>";
+    } 
 }
 // MODUL BERANDA				
 if ($_GET['module']=='home'){
@@ -171,9 +184,9 @@ if ($_GET['module']=='home'){
 			?>
 			<!-- Start of Slide -->
 			<div class="item <?php if($no==1){echo "active";} ?>">
-			<a href="<?php echo $tsd['link']; ?>" target="_blank">
-				<!-- Slide Background -->
-				<img src="./foto_slider/<?php echo $tsd['gmb_slider']; ?>" alt=""  class="slide-image"/>
+			<a href="<?php echo e($tsd['link']); ?>" target="_blank">
+    			<!-- Slide Background -->
+				<img src="./foto_slider/<?php echo e($tsd['gmb_slider']); ?>" alt="" class="slide-image"/>
 				<!-- <div class="bs-slider-overlay"></div> -->
 
 				<div class="container">
@@ -223,9 +236,9 @@ if ($_GET['module']=='home'){
 						}
 					?>
 					<li class="<?php echo $awback[$no]; ?> margin-top-0 margin-bottom-40">
-						<a class="pie margin-top-20 margin-bottom-10" href="<?php echo $tlist['link']; ?>" target="_blank">
-						<i class="fa fa-folder-open icon-circle icon-bordered fa-primary ikon-kecil" style="color: <?php echo $awicon[$no]; ?>; border-color: <?php echo $awicon[$no]; ?>;"></i><strong><?php echo $tlist['nama_menu']; ?></strong>
-							<span><p><?php echo $tlist['keterangan']; ?></p>
+						<a class="pie margin-top-20 margin-bottom-10" href="<?php echo e($tlist['link']); ?>" target="_blank">
+						<i class="fa fa-folder-open icon-circle icon-bordered fa-primary ikon-kecil" style="color: <?php echo $awicon[$no]; ?>; border-color: <?php echo $awicon[$no]; ?>;"></i><strong><?php echo e($tlist['nama_menu']); ?></strong>
+							<span><p><?php echo e($tlist['keterangan']); ?></p>
 							</span>
 						</a>
 					</li>
@@ -260,10 +273,10 @@ if ($_GET['module']=='home'){
 								<div class="row">                               
 									<div class="col-sm-12 no-padding">
 										<a href="baca-berita-<?php echo $t['id_berita']."-".$t['judul_seo'];?>.html">
-											<img class="img-responsive slider-berita" src="foto_berita/<?php echo $t['gambar']; ?>"/>
+											<img class="img-responsive slider-berita" src="foto_berita/<?php echo e($t['gambar']); ?>"/>
 											<div class="carousel-caption">
 												<span><?php echo $t['hari']; ?>, <?php echo tgl_indo($t['tanggal']);?></span>
-												<h2 align="left"><?php echo $t['judul']; ?></h2>
+												<h2 align="left"><?php echo e($t['judul']); ?></h2>
 											</div>                     
 										</a>
 									</div><!-- .col-sm-12 -->
@@ -295,10 +308,10 @@ if ($_GET['module']=='home'){
 							<li data-target="#custom_carousel" data-slide-to="<?php echo $no; ?>" class="">
 								<a href="#" class="slider-control">
 									<div class="margin-bottom-10">
-										<img class="img-responsive" src="foto_berita/small_<?php echo $t['gambar']; ?>"/>
+										<img class="img-responsive" src="foto_berita/small_<?php echo e($t['gambar']); ?>"/>
 									</div>
 									<p class="hidden-xs hidden-sm text-page">
-										<span><?php echo $t['judul']; ?></span>
+										<span><?php echo e($t['judul']); ?></span>
 									</p>
 								</a>
 							</li>
@@ -347,11 +360,11 @@ if ($_GET['module']=='home'){
 						<a href="baca-berita-<?php echo $bt['id_berita']."-".$bt['judul_seo'];?>.html" class="list-group-item custom">
 							<div class="row">
 								<div class="col-xs-4 no-padding">
-									<img src="foto_berita/small_<?php echo $bt['gambar']; ?>" class="img-responsive padding-right-10">
+									<img src="foto_berita/small_<?php echo e($bt['gambar']); ?>" class="img-responsive padding-right-10">
 								</div>
 								<div class="col-xs-8 no-padding">
 									<div style="overflow: hidden;height: 57px;">
-										<h5 class="no-margin"><span style="color: #000000;"><?php echo $bt['judul']; ?></span></h5>
+										<h5 class="no-margin"><span style="color: #000000;"><?php echo e($bt['judul']); ?></span></h5>
 									</div>
 								</div>  
 							</div>
@@ -368,11 +381,11 @@ if ($_GET['module']=='home'){
 						<a href="baca-berita-<?php echo $bp['id_berita']."-".$bp['judul_seo'];?>.html" class="list-group-item custom">
 							<div class="row">
 								<div class="col-xs-4 no-padding">
-									<img src="foto_berita/small_<?php echo $bp['gambar']; ?>" class="img-responsive padding-right-10">
+									<img src="foto_berita/small_<?php echo e($bp['gambar']); ?>" class="img-responsive padding-right-10">
 								</div>
 								<div class="col-xs-8 no-padding">
 									<div style="overflow: hidden;height: 57px;">
-										<h5 class="no-margin"><span style="color: #000000;"><?php echo $bp['judul']; ?></span></h5>
+										<h5 class="no-margin"><span style="color: #000000;"><?php echo e($bp['judul']); ?></span></h5>
 									</div>
 								</div>  
 							</div>
@@ -425,8 +438,8 @@ if ($_GET['module']=='home'){
 							$ambilbanner=querydb("SELECT * FROM banner LIMIT 1");
 							$tban=$ambilbanner->fetch_array();
 						?>
-						<a href="<?php echo $tban['link']; ?>" target="_blank">
-							<img src="foto_banner/<?php echo $tban['gambar']; ?>" width="100%"/>
+						<a href="<?php echo e($tban['link']); ?>" target="_blank">
+							<img src="foto_banner/<?php echo e($tban['gambar']); ?>" width="100%" alt="Banner"/>
 						</a>	
 					</div>
 				</div>
@@ -510,7 +523,7 @@ if ($_GET['module']=='home'){
 							$tgl_mulai   = tgl_indo($tgl_mulai_raw);
 							$tgl_selesai = tgl_indo($tgl_selesai_raw);
 
-							$isi_agenda  = nl2br($tgd['isi_agenda'] ?? '');
+							$isi_agenda  = nl2br (e($tgd['isi_agenda'] ?? ''));
 
 							if ($tgl_mulai == $tgl_selesai){
 								$rentang_tgl = $tgl_mulai;
@@ -529,28 +542,28 @@ if ($_GET['module']=='home'){
 							</div>
 
 							<div class="media-body">	
-								<h5 class="agenda-title"><b><?php echo $tgd['tema']; ?></b></h5>
+								<h5 class="agenda-title"><b><?php echo e($tgd['tema']); ?></b></h5>
 
 								<div class="agenda-meta small">
 
 									<div class="agenda-row">
 										<i class="fa fa-map-marker"></i>
-										<span><?php echo $tgd['tempat']; ?></span>
+										<span><?php echo e($tgd['tempat']); ?></span>
 									</div>
 									
 									<div class="agenda-row">
 										<i class="fa fa-calendar"></i>
-										<span><?php echo $rentang_tgl; ?></span>
+										<span><?php echo e($rentang_tgl); ?></span>
 									</div>
 
 									<div class="agenda-row">
 										<i class="fa fa-clock-o"></i>
-										<span>Pukul <?php echo $tgd['jam']; ?></span>
+										<span>Pukul <?php echo e($tgd['jam']); ?></span>
 									</div>
 
 									<div class="agenda-row">
 										<i class="fa fa-user"></i>
-										<span><?php echo $tgd['pengirim']; ?></span>
+										<span><?php echo e($tgd['pengirim']); ?></span>
 									</div>
 								</div>
 
@@ -570,6 +583,9 @@ if ($_GET['module']=='home'){
 					<?php 
 						$pengumuman = querydb("SELECT * FROM pengumuman ORDER BY id_pengumuman DESC LIMIT 6");
 						while($tpe=$pengumuman->fetch_array()){
+							$id_peng = (int)$tpe['id_pengumuman'];
+							$slug    = e($tpe['judul_seo']);
+							$judul   = e($tpe['judul']);
 					?>
 						<li class="media space margin-bottom-20">
 							<div class="media-left">
@@ -584,8 +600,8 @@ if ($_GET['module']=='home'){
 									<?php echo konversi_tanggal("D, j M Y",$tpe['tgl_posting']); ?>
 								</p>
 								<h4 class="media-heading margin-top-5">
-									<a href="baca-pengumuman-<?php echo $tpe['id_pengumuman']."-".$tpe['judul_seo']; ?>.html">
-										<?php echo $tpe['judul']; ?>
+									<a href="baca-pengumuman-<?php echo $id_peng."-".$slug; ?>.html">
+										<?php echo $judul; ?>
 									</a>
 								</h4>
 							</div>
@@ -695,10 +711,14 @@ if ($_GET['module']=='home'){
 			<?php 
 			$album=querydb("SELECT * FROM album WHERE aktif='Y' ORDER BY id_album DESC LIMIT 4");
 			while($tfab=$album->fetch_array()){
+				$idalbum = (int)$tfab['id_album'];
+				$slug    = e($tfab['album_seo']);
+				$judul   = e($tfab['jdl_album']);
+				$gbr     = e($tfab['gbr_album']);
 			?>
 			<div class="col-md-3 col-sm-6 col-xs-12 margin-bottom-15">
 				<div class="content-box box-img no-margin text-center featured-news box-clickable">
-					<img class="img-responsive" src="img_album/small_<?php echo $tfab['gbr_album']; ?>" alt="<?php echo $tfab['jdl_album']; ?>" width="100%" style="height:230px;">
+					<img class="img-responsive" src="img_album/small_<?php echo $gbr; ?>" alt="<?php echo $judul; ?>" width="100%" style="height:230px;">
 					<div class="ua-square-logo overlap-top text-center">
 						<center>
 							<div class="overlay-custom" style="max-width: 150px;margin-top:30px;">
@@ -708,7 +728,7 @@ if ($_GET['module']=='home'){
 					</div> <!-- .overlay-post -->
 					<div class="box-body">
 						<h4>
-							<a href="lihat-foto-<?php echo $tfab['id_album']."-".$tfab['album_seo']; ?>.html"><?php echo $tfab['jdl_album']; ?></a>
+							<a href="lihat-foto-<?php echo $idalbum."-".$slug; ?>.html"><?php echo $judul; ?></a>
 						</h4>
 					</div> <!-- .box-body -->
 				</div> <!-- .box-img -->
@@ -751,6 +771,11 @@ elseif($_GET['module']=='detailberita'){
         );
 
         $d = $detail ? $detail->fetch_array() : null;
+		$judul   = e($d['judul'] ?? '');
+		$jam     = e($d['jam'] ?? '');
+		$penulis = e($d['nama_lengkap'] ?? '');
+		$tgl     = e($d['tanggal'] ?? '');
+		$tglSafe = konversi_tanggal("D, j F Y",$tgl);
 
         if (!$d) {
             // ID valid tapi data tidak ada
@@ -802,10 +827,10 @@ elseif($_GET['module']=='detailberita'){
 						</div> <!-- .row -->
 					</div> <!-- .container -->
 				</div>
-				<h1 class="margin-top-15"><?php echo $d['judul']; ?></h1>
+				<h1 class="margin-top-15"><?php echo $judul; ?></h1>
 				<ul class="list-inline small font-weight-600 myriadpro">
-					<li><i class="fa fa-calendar"></i> <?php echo $d['hari'].", ".$tgl." - ".$d['jam']; ?> WITA</li>
-					<li><i class="fa fa-user"></i> <?php echo $d['nama_lengkap']; ?></li>
+					<li><i class="fa fa-calendar"></i> <?php echo $tglSafe." - ".$jam; ?> WIT</li>
+					<li><i class="fa fa-user"></i> <?php echo $penulis; ?></li>
 				</ul>
 
 				<ul class="rrssb-buttons margin-bottom-15">
@@ -860,12 +885,14 @@ elseif($_GET['module']=='detailberita'){
 				<article class="news margin-bottom-15">
 					<!-- gambar konten -->
 					<?php 
-					if ($d['gambar']!=''){
+					if (!empty($d['gambar'])) {
+						$img   = e($d['gambar']);
+						$alt   = e($d['judul'] ?? '');
 						echo "<figure class='wp-caption margin-bottom-15'>
-								<img style='align:center;width:100%;' class='size-medium img-responsive' 
-									 src='foto_berita/$d[gambar]' 
-									 alt='$d[judul]'/>
-								</figure>";
+								<img style='align:center;width:100%;' class='size-medium img-responsive'
+									src='foto_berita/{$img}'
+									alt='{$alt}'/>
+							</figure>";
 					}
 					?>
 					<div class="divider-light"></div>
@@ -923,7 +950,7 @@ elseif($_GET['module']=='detailberita'){
 		</li>
 	</ul>
 		<ul class="list-inline small font-weight-600 myriadpro">
-			<li><i class="fa fa-calendar"></i> <?php echo $d['hari'].", ".$tgl." - ".$d['jam']; ?> WITA</li>
+			<li><i class="fa fa-calendar"></i> <?php echo $d['hari'].", ".$tgl." - ".$d['jam']; ?> WIT</li>
 			<li><i class="fa fa-user"></i> <?php echo $d['nama_lengkap']; ?></li>
 		</ul>
 
@@ -1006,7 +1033,7 @@ elseif($_GET['module']=='hasilpoling'){
 						<td colspan="3" align="left" valign="middle">&nbsp;</td>
 					  </tr>
 					  <tr>
-						<td colspan="5" align="left" valign="middle"><?php echo $dperta['pilihan']; ?></td>
+						<td colspan="5" align="left" valign="middle"><?php echo e($dperta['pilihan']); ?></td>
 					  </tr>
 					  <tr>
 						<td align="left" valign="middle">&nbsp;</td>
@@ -1019,12 +1046,16 @@ elseif($_GET['module']=='hasilpoling'){
 						<td colspan="3" align="left" valign="middle"><strong>Hasil Persentase (%)</strong></td>
 					  </tr>
 					  <?php 
-					     $jml=querydb("SELECT SUM(rating) as jml_vote FROM poling WHERE aktif='Y'");
-						  $j=$jml->fetch_array();
-						  
-						  $jml_vote=$j['jml_vote'];
-						  
-						  $sql=querydb("SELECT * FROM poling WHERE aktif='Y' and status='Jawaban'");
+					  $jml=querydb("SELECT SUM(rating) as jml_vote FROM poling WHERE aktif='Y'");
+					  $j = $jml->fetch_array();
+					  $jml_vote = (int)($j['jml_vote'] ?? 0);
+					  
+					  if ($jml_vote <= 0) {
+						echo "<p>Belum ada responden.</p>";
+						$jml_vote = 1; // supaya tidak division by zero di bawah
+						}
+						
+						$sql=querydb("SELECT * FROM poling WHERE aktif='Y' and status='Jawaban'");
 						  
 						  while ($s=$sql->fetch_array()){
 						  	
@@ -1033,7 +1064,7 @@ elseif($_GET['module']=='hasilpoling'){
 						 
 					  ?>
 					  <tr class="teks_utama">
-						<td width="23%" align="left" valign="middle" bgcolor="#EFEFEF"><?php echo $s['pilihan']; ?>&nbsp;</td>
+						<td width="23%" align="left" valign="middle" bgcolor="#EFEFEF"><?php echo e($s['pilihan']); ?>&nbsp;</td>
 						<td width="1%" align="center" valign="middle" bgcolor="#EFEFEF"></td>
 						<td width="30%" align="left" valign="middle" bgcolor="#EFEFEF"><img src="images/bar.gif" width="<?php echo $gbr_vote; ?>" height="14" /></td>
 						<td width="4%" align="right" valign="middle" bgcolor="#EFEFEF"><?php echo $s['rating']; ?>&nbsp;</td>
@@ -1101,7 +1132,7 @@ elseif ($_GET['module']=='lihatpoling'){
 						<td colspan="3" align="left" valign="middle">&nbsp;</td>
 					  </tr>
 					  <tr>
-						<td colspan="5" align="left" valign="middle"><?php echo $dperta['pilihan']; ?></td>
+						<td colspan="5" align="left" valign="middle"><?php echo e($dperta['pilihan']); ?></td>
 					  </tr>
 					  <tr>
 						<td align="left" valign="middle">&nbsp;</td>
@@ -1114,10 +1145,14 @@ elseif ($_GET['module']=='lihatpoling'){
 						<td colspan="3" align="left" valign="middle"><strong>Hasil Persentase (%)</strong></td>
 					  </tr>
 					  <?php 
-					     $jml=querydb("SELECT SUM(rating) as jml_vote FROM poling WHERE aktif='Y'");
-						  $j=$jml->fetch_array();
+					    $jml=querydb("SELECT SUM(rating) as jml_vote FROM poling WHERE aktif='Y'");
+						$j=$jml->fetch_array();
 						  
-						  $jml_vote=$j['jml_vote'];
+						$jml_vote = (int)($j['jml_vote'] ?? 0);
+					  
+					  	if ($jml_vote <= 0) {
+							$jml_vote = 1; // supaya tidak division by zero di bawah
+							}
 						  
 						  $sql=querydb("SELECT * FROM poling WHERE aktif='Y' and status='Jawaban'");
 						  
@@ -1128,7 +1163,7 @@ elseif ($_GET['module']=='lihatpoling'){
 						 
 					  ?>
 					  <tr class="teks_utama">
-						<td width="23%" align="left" valign="middle" bgcolor="#EFEFEF"><?php echo $s['pilihan']; ?>&nbsp;</td>
+						<td width="23%" align="left" valign="middle" bgcolor="#EFEFEF"><?php echo e($s['pilihan']); ?>&nbsp;</td>
 						<td width="1%" align="center" valign="middle" bgcolor="#EFEFEF"></td>
 						<td width="30%" align="left" valign="middle" bgcolor="#EFEFEF"><img src="images/bar.gif" width="<?php echo $gbr_vote; ?>" height="14" /></td>
 						<td width="4%" align="right" valign="middle" bgcolor="#EFEFEF"><?php echo $s['rating']; ?>&nbsp;</td>
@@ -1182,6 +1217,9 @@ elseif ($_GET['module']=='halamanstatis'){
             // 3) URL untuk share (dipakai di tombol share di bawah)
             $shareUrl = $tiden['alamat_website']
                       . "/statis-" . $d['id_halaman'] . "-" . $d['judul_seo'] . ".html";
+		
+		$judul = e($d['judul'] ?? '');
+		$tgl   = e($tgl_posting);
 ?>
 
 <section class="site-content padding-bottom-0 margin-top-15">
@@ -1200,21 +1238,24 @@ elseif ($_GET['module']=='halamanstatis'){
 						</div> <!-- .row -->
 					</div> <!-- .container -->
 				</div>
-				<h1 class="margin-top-15"><?php echo $d['judul']; ?></h1>
+				<h1 class="margin-top-15"><?php echo $judul; ?></h1>
 				<ul class="list-inline small font-weight-600 myriadpro">
-					<li><i class="fa fa-calendar"></i> <?php echo $tgl_posting; ?></li>
+					<li><i class="fa fa-calendar"></i> <?php echo $tgl; ?></li>
 				</ul>
 				
 				<article class="news margin-bottom-15">
 					<!-- gambar konten -->
 					<?php 
-					if ($d['gambar']!=''){
+					if (!empty($d['gambar'])) {
+						$img = e($d['gambar']);
+						$alt = e($d['judul'] ?? '');
 						echo "<figure class='wp-caption margin-bottom-15'>
-								<img style='align:center;' class='size-medium img-responsive' 
-									 src='foto_banner/$d[gambar]' 
-									 alt='$d[judul]'/>
-								</figure>";
+								<img style='align:center;' class='size-medium img-responsive'
+									src='foto_banner/{$img}'
+									alt='{$alt}'/>
+							</figure>";
 					}
+
 					?>
 					<div class="divider-light"></div>
 					<div style="text-align: justify;"><p><?php echo $d['isi_halaman']; ?></p></div>
@@ -1754,13 +1795,21 @@ elseif ($_GET['module']=='semuadownload'){
 				  $batas  = 10;
 				  $posisi = $p->cariPosisi($batas);
 				  // Tampilkan semua download
-				 	$sql = querydb("SELECT * FROM download  
-				                      ORDER BY id_download DESC LIMIT $posisi,$batas");			 
-				                    while ($d = $sql->fetch_array()) {
-                    // Sanitasi data untuk output
-                    $judul = e($d['judul'] ?? '');
-                    $file  = isset($d['nama_file']) ? urlencode($d['nama_file']) : '';
-                    $hits  = (int)($d['hits'] ?? 0);
+				 	$stmt = querydb_prepared(
+												"SELECT id_download, judul, nama_file, hits
+												FROM download
+												ORDER BY id_download DESC
+												LIMIT ?, ?",
+												"ii",
+												[$posisi, $batas]
+											);
+				    while ($row = $stmt->fetch_assoc()):
+					$id        = (int)$row['id_download'];
+					$judul     = e($row['judul']);
+					$nama_file = $row['nama_file'];          // raw
+					$hits      = (int)$row['hits'];
+
+					$downloadurl = 'downlot.php?file=' . rawurlencode($nama_file);
                 ?>
                     <div class="col-md-12 col-sm-12 col-xs-12 masonry-grid-item no-padding">
                         <article class="content-box box-img bg-light box-clickable media">
@@ -1773,25 +1822,32 @@ elseif ($_GET['module']=='semuadownload'){
                                 <div class="media-body">
                                     <h5><b><?php echo $judul; ?></b></h5>
                                     <ul class="list-inline small">
-                                        <li><b><a href="downlot.php?file=<?php echo $file; ?>">
+                                        <li><b><a href="<?php echo $downloadurl; ?>">
                                             <i class="fa fa-download"></i>
-                                            <?php echo " Telah di download sebanyak ($hits) kali"; ?>
+                                            <?php echo " Telah di download sebanyak $hits kali"; ?>
                                         </a></b></li>
                                     </ul>
                                 </div>
                             </div>
                         </article>
                     </div>
+					<?php endwhile; ?>
                     <?php
-                  }
+					$stmt->free();
 
-					
-				  $jmldata     = querydb("SELECT * FROM download")->num_rows;
-				  $jmlhalaman  = $p->jumlahHalaman($jmldata, $batas);
-				  $linkHalaman = $p->navHalaman($_GET['haldownload'], $jmlhalaman);
-				  echo "<div class='col-md-12 col-sm-12 col-xs-12 text-center'>
+					// paging
+					$jmldata     = querydb("SELECT COUNT(*) AS jml FROM download");
+					$totalRow    = $jmldata ? $jmldata->fetch_assoc() : ['jml' => 0];
+					$jmlhalaman  = $p->jumlahHalaman((int)$totalRow['jml'], $batas);
+
+					$currentPage = isset($_GET['haldownload']) ? (int)$_GET['haldownload'] : 1;
+					if ($currentPage < 1) {
+						$currentPage = 1;
+					}
+					$linkHalaman = $p->navHalaman($currentPage, $jmlhalaman);
+					echo "<div class='col-md-12 col-sm-12 col-xs-12 text-center'>
 							<div class='row' align='center'><center><ul class='pagination'>$linkHalaman</ul></center></div></div>";
-				?>	
+					?>	
 				</div>
 			</div>
 			<div class="col-md-4 right-column no-padding">
