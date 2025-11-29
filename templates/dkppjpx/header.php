@@ -59,10 +59,7 @@
 								  echo "<li class='dropdown'><a href='$r[link]' class='dropdown-toggle' style='text-transform: uppercase;' data-toggle='dropdown'>$r[nama_menu]</a>";
 								  echo "<ul class='dropdown-menu'>";                 
 									while($w=$sub->fetch_array()){
-									echo "<li class='dropdown'><a href='$w[link]'>$w[nama_menu]</a></li>
-									   <ul class='dropdown-menu'>
-									   <li><a href='fef'>fefe</a>
-									   </ul>";
+									echo "<li class='dropdown'><a href='$w[link]'>$w[nama_menu]</a></li>";
 									}           
 								 echo "</ul>
 									   </li>";

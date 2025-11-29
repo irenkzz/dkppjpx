@@ -137,7 +137,7 @@ function artikelTerkait(int $id, int $threshold = 40, int $maksArtikel = 5): str
 
         if ($percent >= $threshold && count($listArtikel) < $maksArtikel) {
             $safeTitle = e($judul);
-            $safeSlug  = rawurlencode($judulSeo);
+            $safeSlug  = e($judulSeo);
             $url       = "baca-berita-{$idBerita}-{$safeSlug}.html";
 
             $listArtikel[] = "
@@ -157,21 +157,8 @@ function artikelTerkait(int $id, int $threshold = 40, int $maksArtikel = 5): str
          . "</div>";
 }
 
-function clamp_page($raw, int $default = 1): int
-{
-    $page = (int)($raw ?? $default);
-    return $page < 1 ? $default : $page;
-}
-
-function build_seo_url(string $prefix, int $id, string $slug): string
-{
-    return $prefix . $id . '-' . rawurlencode($slug) . '.html';
-}
-
-$module = isset($_GET['module']) ? trim((string) $_GET['module']) : '';
-
 // MODUL BERANDA				
-if ($module=='home'){
+if ($_GET['module']=='home'){
  ?>
 <section class="site-section banner-atas-default hidden-xs hidden-sm">
 
@@ -228,7 +215,7 @@ if ($module=='home'){
 				$ambiliden=querydb("SELECT * FROM identitas LIMIT 1");
 				$tiden=$ambiliden->fetch_array();
 				?>
-				<img class="foto-bupati" src="images/<?php echo e($tiden['fopim']); ?>">
+				<img class="foto-bupati" src="images/<?php echo $tiden['fopim']; ?>">
 			</div>
 			<div class="col-md-9 padding-right-0">
 				<ul class="indicators-list slider-kecil margin-left-20 margin-right-10">
@@ -269,6 +256,9 @@ if ($module=='home'){
 						$no=1;
 						while($t=$terkini2->fetch_array()){      
 						$tgl = tgl_indo($t['tanggal']);
+						/*$isi_berita = strip_tags($t['isi_berita']); 
+						$isi = substr($isi_berita,0,130); 
+						$isi = substr($isi_berita,0,strrpos($isi," ")); */
 						
 						if($no==1){$item="active";}else{$item="";}
 						?>
@@ -276,10 +266,10 @@ if ($module=='home'){
 							<div class="container-fluid no-padding">
 								<div class="row">                               
 									<div class="col-sm-12 no-padding">
-										<a href="<?php echo build_seo_url('baca-berita-', (int)$t['id_berita'], $t['judul_seo']); ?>">
-											<img class="img-responsive slider-berita" src="foto_berita/<?php echo e($t['gambar']); ?>" alt="<?php echo e($t['judul']); ?>"/>
+										<a href="baca-berita-<?php echo $t['id_berita']."-".$t['judul_seo'];?>.html">
+											<img class="img-responsive slider-berita" src="foto_berita/<?php echo e($t['gambar']); ?>"/>
 											<div class="carousel-caption">
-												<span><?php echo e($t['hari']); ?>, <?php echo e(tgl_indo($t['tanggal']));?></span>
+												<span><?php echo $t['hari']; ?>, <?php echo tgl_indo($t['tanggal']);?></span>
 												<h2 align="left"><?php echo e($t['judul']); ?></h2>
 											</div>                     
 										</a>
@@ -312,7 +302,7 @@ if ($module=='home'){
 							<li data-target="#custom_carousel" data-slide-to="<?php echo $no; ?>" class="">
 								<a href="#" class="slider-control">
 									<div class="margin-bottom-10">
-										<img class="img-responsive" src="foto_berita/small_<?php echo e($t['gambar']); ?>" alt="<?php echo e($t['judul']); ?>"/>
+										<img class="img-responsive" src="foto_berita/small_<?php echo e($t['gambar']); ?>"/>
 									</div>
 									<p class="hidden-xs hidden-sm text-page">
 										<span><?php echo e($t['judul']); ?></span>
@@ -327,7 +317,14 @@ if ($module=='home'){
 				</div>
 				<!-- End Carousel Slider Berita -->
 
-				
+				<script type="text/javascript">
+					$(document).ready(function(ev){
+					$('#custom_carousel').on('slide.bs.carousel', function (evt) {
+						$('#custom_carousel .controls li.active').removeClass('active');
+						$('#custom_carousel .controls li:eq('+$(evt.relatedTarget).index()+')').addClass('active');
+					})
+				});
+				</script>
 
 			</div> <!-- .col-md-8 -->
 
@@ -354,10 +351,10 @@ if ($module=='home'){
 						while($bt=$terbaru->fetch_array()){      
 						$tgl = tgl_indo($bt['tanggal']);
 						?>
-						<a href="<?php echo build_seo_url('baca-berita-', (int)$bt['id_berita'], $bt['judul_seo']); ?>" class="list-group-item custom">
+						<a href="baca-berita-<?php echo $bt['id_berita']."-".$bt['judul_seo'];?>.html" class="list-group-item custom">
 							<div class="row">
 								<div class="col-xs-4 no-padding">
-									<img src="foto_berita/small_<?php echo e($bt['gambar']); ?>" class="img-responsive padding-right-10" alt="<?php echo e($bt['judul']); ?>">
+									<img src="foto_berita/small_<?php echo e($bt['gambar']); ?>" class="img-responsive padding-right-10">
 								</div>
 								<div class="col-xs-8 no-padding">
 									<div style="overflow: hidden;height: 57px;">
@@ -375,10 +372,10 @@ if ($module=='home'){
 						while($bp=$populer->fetch_array()){      
 						$tgl = tgl_indo($bp['tanggal']);
 						?>
-						<a href="<?php echo build_seo_url('baca-berita-', (int)$bp['id_berita'], $bp['judul_seo']); ?>" class="list-group-item custom">
+						<a href="baca-berita-<?php echo $bp['id_berita']."-".$bp['judul_seo'];?>.html" class="list-group-item custom">
 							<div class="row">
 								<div class="col-xs-4 no-padding">
-									<img src="foto_berita/small_<?php echo e($bp['gambar']); ?>" class="img-responsive padding-right-10" alt="<?php echo e($bp['judul']); ?>">
+									<img src="foto_berita/small_<?php echo e($bp['gambar']); ?>" class="img-responsive padding-right-10">
 								</div>
 								<div class="col-xs-8 no-padding">
 									<div style="overflow: hidden;height: 57px;">
@@ -485,8 +482,8 @@ if ($module=='home'){
 						<li class="media space margin-bottom-20">
 							<div class="media-left">
 								<img class="media-object borderthumb" 
-									 src="foto_berita/small_<?php echo e($a['gambar']); ?>" 
-									 alt="<?php echo e($a['judul']); ?>" 
+									 src="foto_berita/small_<?php echo $a['gambar']; ?>" 
+									 alt="<?php echo $a['judul']; ?>" 
 									 width="125" 
 									 height="70">
 							</div> <!-- .media-left -->
@@ -494,13 +491,12 @@ if ($module=='home'){
 							<div class="media-body">
 								<p class="small text-muted no-bottom-spacing">
 									<i class="fa fa-calendar margin-right-5"></i>
-									<?php echo e(tgl_indo($a['tanggal'])); ?>
+									<?php echo tgl_indo($a['tanggal']); ?>
 								</p>
 								<h4 class="media-heading margin-top-5">
-									<a href="baca-berita-<?php echo (int)$a['id_berita']."-".rawurlencode($a['judul_seo']); ?>.html">
-										<?php echo e($a['judul']); ?>
+									<a href="baca-berita-<?php echo $a['id_berita']."-".$a['judul_seo'];?>.html">
+										<?php echo $a['judul']; ?>
 									</a>
-
 								</h4>
 							</div> <!-- .media-body -->
 						</li>
@@ -582,8 +578,8 @@ if ($module=='home'){
 						$pengumuman = querydb("SELECT * FROM pengumuman ORDER BY id_pengumuman DESC LIMIT 6");
 						while($tpe=$pengumuman->fetch_array()){
 							$id_peng = (int)$tpe['id_pengumuman'];
-							$slug  = rawurlencode($tpe['judul_seo'] ?? '');
-							$judul = e($tpe['judul'] ?? '');
+							$slug    = e($tpe['judul_seo']);
+							$judul   = e($tpe['judul']);
 					?>
 						<li class="media space margin-bottom-20">
 							<div class="media-left">
@@ -595,10 +591,10 @@ if ($module=='home'){
 							<div class="media-body">
 								<p class="small text-muted no-bottom-spacing">
 									<i class="fa fa-calendar margin-right-5"></i>
-									<?php echo e(konversi_tanggal("D, j M Y",$tpe['tgl_posting'])); ?>
+									<?php echo konversi_tanggal("D, j M Y",$tpe['tgl_posting']); ?>
 								</p>
 								<h4 class="media-heading margin-top-5">
-									<a href="baca-pengumuman-<?php echo $id_peng . "-" . $slug; ?>.html">
+									<a href="baca-pengumuman-<?php echo $id_peng."-".$slug; ?>.html">
 										<?php echo $judul; ?>
 									</a>
 								</h4>
@@ -633,7 +629,7 @@ if ($module=='home'){
 						$tanya = querydb("SELECT * FROM poling WHERE aktif='Y' and status='Pertanyaan'");
 						$t     = $tanya->fetch_array();
 						?>
-						<p><?php echo e($t['pilihan']); ?></p>
+						<p><?php echo $t['pilihan']; ?></p>
 						<form action="hasil-poling.html" method="post" class="bs-example form-horizontal">
 							<input type="hidden" name="csrf_token" value="<?php echo e($_SESSION['poll_csrf'] ?? ''); ?>">
 							<div class="form-group">
@@ -723,7 +719,7 @@ if ($module=='home'){
 			$album=querydb("SELECT * FROM album WHERE aktif='Y' ORDER BY id_album DESC LIMIT 4");
 			while($tfab=$album->fetch_array()){
 				$idalbum = (int)$tfab['id_album'];
-				$slug    = rawurlencode($tfab['album_seo'] ?? '');
+				$slug    = e($tfab['album_seo']);
 				$judul   = e($tfab['jdl_album']);
 				$gbr     = e($tfab['gbr_album']);
 			?>
@@ -757,7 +753,7 @@ if ($module=='home'){
  <?php
  }
 //MODUL DETAIL BERITA 
-elseif($module=='detailberita'){
+elseif($_GET['module']=='detailberita'){
 
 	// Sanitasi & validasi ID dari URL
     $id_berita = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -796,7 +792,7 @@ elseif($module=='detailberita'){
                     </div>
                   </section>';
         } else {
-            // Data ditemukan ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ lanjut seperti biasa
+            // Data ditemukan → lanjut seperti biasa
             $tgl = tgl_indo($d['tanggal']);
 
             // Start session jika belum
@@ -840,13 +836,13 @@ elseif($module=='detailberita'){
 				</div>
 				<h1 class="margin-top-15"><?php echo $judul; ?></h1>
 				<ul class="list-inline small font-weight-600 myriadpro">
-					<li><i class="fa fa-calendar"></i> <?php echo e($tglSafe)." - ".$jam; ?> WIT</li>
+					<li><i class="fa fa-calendar"></i> <?php echo $tglSafe." - ".$jam; ?> WIT</li>
 					<li><i class="fa fa-user"></i> <?php echo $penulis; ?></li>
 				</ul>
 
 				<?php
-			$shareUrl = $tiden['alamat_website'] . "/baca-berita-{$d['id_berita']}-" . rawurlencode($d['judul_seo'] ?? '') . ".html";
-			echo render_share_buttons($shareUrl, $d['judul']);
+				$shareUrl = $tiden['alamat_website'] . "/baca-berita-{$d['id_berita']}-{$d['judul_seo']}.html";
+				echo render_share_buttons($shareUrl, $d['judul']);
 				?>
 
 				<article class="news margin-bottom-15">
@@ -868,13 +864,13 @@ elseif($module=='detailberita'){
 				</article>
 
 		<?php
-		$shareUrl = $tiden['alamat_website'] . "/baca-berita-{$d['id_berita']}-" . rawurlencode($d['judul_seo'] ?? '') . ".html";
+		$shareUrl = $tiden['alamat_website'] . "/baca-berita-{$d['id_berita']}-{$d['judul_seo']}.html";
 		echo render_share_buttons($shareUrl, $d['judul']);
 		?>
 
 		<ul class="list-inline small font-weight-600 myriadpro">
-			<li><i class="fa fa-calendar"></i> <?php echo e($tglSafe)." - ".$jam; ?> WIT</li>
-			<li><i class="fa fa-user"></i> <?php echo $penulis; ?></li>
+			<li><i class="fa fa-calendar"></i> <?php echo $d['hari'].", ".$tgl." - ".$d['jam']; ?> WIT</li>
+			<li><i class="fa fa-user"></i> <?php echo $d['nama_lengkap']; ?></li>
 		</ul>
 
 		<div class="divider-light"></div>
@@ -902,7 +898,7 @@ elseif($module=='detailberita'){
 }
 
 // MODUL HASIL POLLING
-elseif($module=='hasilpoling'){
+elseif($_GET['module']=='hasilpoling'){
 ?>
 
 <?php
@@ -910,12 +906,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$postedToken  = (string) ($_POST['csrf_token'] ?? '');
-$sessionToken = (string) ($_SESSION['poll_csrf'] ?? '');
+$postedToken  = $_POST['csrf_token'] ?? '';
+$sessionToken = $_SESSION['poll_csrf'] ?? '';
 
-if ($postedToken === '' || $sessionToken === '' || !hash_equals($sessionToken, $postedToken)) {
+if (!hash_equals($sessionToken, $postedToken)) {
     echo "<p>Token tidak valid. Silakan coba lagi.</p>";
-    return;
+    // sebaiknya stop di sini
 } else {
 ?>
 
@@ -1007,8 +1003,8 @@ if ($postedToken === '' || $sessionToken === '' || !hash_equals($sessionToken, $
 						<td width="23%" align="left" valign="middle" bgcolor="#EFEFEF"><?php echo e($s['pilihan']); ?>&nbsp;</td>
 						<td width="1%" align="center" valign="middle" bgcolor="#EFEFEF"></td>
 						<td width="30%" align="left" valign="middle" bgcolor="#EFEFEF"><img src="images/bar.gif" width="<?php echo $gbr_vote; ?>" height="14" /></td>
-						<td width="4%" align="right" valign="middle" bgcolor="#EFEFEF"><?php echo (int)$s['rating']; ?>&nbsp;</td>
-						<td width="20%" align="left" valign="middle" bgcolor="#EFEFEF"> (<?php echo e($prosentase); ?> %)</td>
+						<td width="4%" align="right" valign="middle" bgcolor="#EFEFEF"><?php echo $s['rating']; ?>&nbsp;</td>
+						<td width="20%" align="left" valign="middle" bgcolor="#EFEFEF"> (<?php echo $prosentase; ?> %)</td>
 					  </tr>
 					  <tr class="teks_utama">
 						<td align="left" valign="middle">&nbsp;</td>
@@ -1024,7 +1020,7 @@ if ($postedToken === '' || $sessionToken === '' || !hash_equals($sessionToken, $
 					  <tr class="teks_utama">
 						<td align="left" valign="middle">Total</td>
 						<td align="center" valign="middle"></td>
-						<td colspan="3" align="left" valign="middle"> <b><?php echo (int)$jml_vote; ?></b> Responden </td>
+						<td colspan="3" align="left" valign="middle"> <b><?php echo $jml_vote; ?></b> Responden </td>
 					  </tr>
 				  </table>
 <?php } ?>
@@ -1035,7 +1031,7 @@ if ($postedToken === '' || $sessionToken === '' || !hash_equals($sessionToken, $
 }
 }
 // MODUL LIHAT POLLING
-elseif ($module=='lihatpoling'){
+elseif ($_GET['module']=='lihatpoling'){
 ?>
 <section class="site-content">
   <div class="container">
@@ -1107,8 +1103,8 @@ elseif ($module=='lihatpoling'){
 						<td width="23%" align="left" valign="middle" bgcolor="#EFEFEF"><?php echo e($s['pilihan']); ?>&nbsp;</td>
 						<td width="1%" align="center" valign="middle" bgcolor="#EFEFEF"></td>
 						<td width="30%" align="left" valign="middle" bgcolor="#EFEFEF"><img src="images/bar.gif" width="<?php echo $gbr_vote; ?>" height="14" /></td>
-						<td width="4%" align="right" valign="middle" bgcolor="#EFEFEF"><?php echo (int)$s['rating']; ?>&nbsp;</td>
-						<td width="20%" align="left" valign="middle" bgcolor="#EFEFEF"> (<?php echo e($prosentase); ?> %)</td>
+						<td width="4%" align="right" valign="middle" bgcolor="#EFEFEF"><?php echo $s['rating']; ?>&nbsp;</td>
+						<td width="20%" align="left" valign="middle" bgcolor="#EFEFEF"> (<?php echo $prosentase; ?> %)</td>
 					  </tr>
 					  <tr class="teks_utama">
 						<td align="left" valign="middle">&nbsp;</td>
@@ -1124,7 +1120,7 @@ elseif ($module=='lihatpoling'){
 					  <tr class="teks_utama">
 						<td align="left" valign="middle">Total</td>
 						<td align="center" valign="middle"></td>
-						<td colspan="3" align="left" valign="middle"> <b><?php echo (int)$jml_vote; ?></b> Responden </td>
+						<td colspan="3" align="left" valign="middle"> <b><?php echo $jml_vote; ?></b> Responden </td>
 					  </tr>
 				  </table>
 									
@@ -1134,7 +1130,7 @@ elseif ($module=='lihatpoling'){
 <?php           
 }
 // MODUL HALAMAN STATIS
-elseif ($module=='halamanstatis'){
+elseif ($_GET['module']=='halamanstatis'){
 
     // 1) Ambil ID dan amankan
     $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -1201,12 +1197,12 @@ elseif ($module=='halamanstatis'){
 				</article>
 
 		<?php
-		$shareUrl = $tiden['alamat_website'] . "/statis-" . $d['id_halaman'] . "-" . rawurlencode($d['judul_seo'] ?? '') . ".html";
+		$shareUrl = $tiden['alamat_website'] . "/statis-" . $d['id_halaman'] . "-" . $d['judul_seo'] . ".html";
 		echo render_share_buttons($shareUrl, $d['judul']);
 		?>
 				
 		<ul class="list-inline small font-weight-600 myriadpro">
-			<li><i class="fa fa-calendar"></i> <?php echo e($tgl_posting); ?></li>
+			<li><i class="fa fa-calendar"></i> <?php echo $tgl_posting; ?></li>
 		</ul>
 
 		<div class="divider-light"></div>
@@ -1226,7 +1222,7 @@ elseif ($module=='halamanstatis'){
 	}         
 }
 // MODUL BERITA PERKATEGORI
-elseif ($module=='detailkategori'){
+elseif ($_GET['module']=='detailkategori'){
 
 	// Tampilkan nama kategori (nama_kategori dari tabel kategori)
     $id_kat = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -1242,10 +1238,6 @@ elseif ($module=='detailkategori'){
             $n = $rs_kat->fetch_array();
         }
     }
-
-	if ($id_kat <= 0) {
-		echo '<section class="site-content"><div class="container"><p>Kategori tidak ditemukan.</p></div></section>';
-	} else {
 ?>
 <section class="site-content">
 	<div class="container">
@@ -1255,12 +1247,12 @@ elseif ($module=='detailkategori'){
 					<div class="container-fluid">
 						<div class="row">
 							<div class="col-md-6 col-sm-6 col-xs-12">
-								<h1 class="breadcrumb-page-title">Direktori <?php echo e($n['nama_kategori'] ?? ''); ?></h1>
+								<h1 class="breadcrumb-page-title">Direktori <?php echo $n['nama_kategori']; ?></h1>
 							</div> <!-- .col-md-6 -->
 							<div class="col-md-6 col-sm-6 col-xs-12">
 								<ol class="breadcrumb">
 									<li><a href="./">Beranda</a></li>
-									<li><?php echo e($n['nama_kategori'] ?? ''); ?></li>
+									<li><?php echo $n['nama_kategori']; ?></li>
 								</ol>
 							</div> <!-- .col-md-6 -->
 						</div> <!-- .row -->
@@ -1273,14 +1265,10 @@ elseif ($module=='detailkategori'){
 					$posisi = $p->cariPosisi($batas);
 
 					// Tampilkan daftar berita sesuai dengan kategori yang dipilih
-					$offset = (int) $posisi;
-					$limit  = (int) $batas;
-					$hasil  = querydb_prepared(
-						"SELECT * FROM berita WHERE id_kategori = ? ORDER BY id_berita DESC LIMIT ?, ?",
-						"iii",
-						[$id_kat, $offset, $limit]
-					);
-					$jumlah = $hasil ? $hasil->num_rows : 0;
+					$sql   = "SELECT * FROM berita WHERE id_kategori=".$id_kat." 
+							ORDER BY id_berita DESC LIMIT $posisi,$batas";
+					$hasil = querydb($sql);
+					$jumlah = $hasil->num_rows;
 						// Apabila ditemukan berita dalam kategori
 						if ($jumlah > 0){
 					   while($r=$hasil->fetch_array()){
@@ -1294,19 +1282,19 @@ elseif ($module=='detailkategori'){
 							<div class="box-body media">
 								<!-- image-mobile -->
 								<div class="media-left foto-list-kecil visible-xs no-padding margin-bottom-10">
-									<img class="img-responsive media-object borderthumb" src="foto_berita/<?php echo e($r['gambar']); ?>" alt="<?php echo e($r['judul']); ?>">
+									<img class="img-responsive media-object borderthumb" src="foto_berita/<?php echo $r['gambar']; ?>" alt="<?php echo $r['judul']; ?>">
 								</div>
 								<!-- image-dekstop -->
 								<div class="media-left hidden-xs">
-									<img class="media-object foto-list-besar borderthumb" src="foto_berita/<?php echo e($r['gambar']); ?>" alt="<?php echo e($r['judul']); ?>" width="190" height="120">
+									<img class="media-object foto-list-besar borderthumb" src="foto_berita/<?php echo $r['gambar']; ?>" alt="<?php echo $r['judul']; ?>" width="190" height="120">
 								</div>
 								<div class="media-body">
 									<h3>
-										<a href="baca-berita-<?php echo (int)$r['id_berita']."-".rawurlencode($r['judul_seo']).".html"; ?>"><?php echo e($r['judul']); ?></a>
+										<a href="baca-berita-<?php echo $r['id_berita']."-".$r['judul_seo'].".html"; ?>"><?php echo $r['judul']; ?></a>
 									</h3>
 
 									<ul class="list-inline small">
-										<li><span class="label label-warning"><i class="fa fa-calendar"></i> <?= e(tgl_indo($r['tanggal'])) ?></span></li>
+										<li><span class="label label-warning"><i class="fa fa-calendar"></i> <?= tgl_indo($r['tanggal']) ?></span></li>
 										<li style="margin-top: 5px;"><?php echo $isi; ?> ...
 											<a href="#">
 												<span></span>
@@ -1321,12 +1309,9 @@ elseif ($module=='detailkategori'){
 						 <?php
 						 }
 						
-					  $jmldataStmt = querydb_prepared("SELECT COUNT(*) AS jml FROM berita WHERE id_kategori = ?", "i", [$id_kat]);
-					  $jmldataRow  = $jmldataStmt ? $jmldataStmt->fetch_assoc() : ['jml' => 0];
-					  $jmldata     = (int)$jmldataRow['jml'];
+					  $jmldata     = querydb("SELECT * FROM berita WHERE id_kategori=".$id_kat)->num_rows;
 					  $jmlhalaman  = $p->jumlahHalaman($jmldata, $batas);
-					  $currentPage = clamp_page($_GET['halkategori'] ?? 1);
-					  $linkHalaman = $p->navHalaman($currentPage, $jmlhalaman);
+					  $linkHalaman = $p->navHalaman($_GET['halkategori'], $jmlhalaman);
 
 					  echo "<div class='col-md-12 col-sm-12 col-xs-12 text-center'>
 							<div class='row' align='center'><center><ul class='pagination'>$linkHalaman</ul></center></div></div>";
@@ -1343,11 +1328,10 @@ elseif ($module=='detailkategori'){
 		</div> <!-- .row -->
 	</div> <!-- .container -->
 </section>
-<?php
-	}
+<?php           
 }	
 // Modul semua pengumuman
-elseif ($module=='semuapengumuman'){
+elseif ($_GET['module']=='semuapengumuman'){
 ?>
 <section class="site-content">
 	<div class="container">
@@ -1374,15 +1358,10 @@ elseif ($module=='semuapengumuman'){
 				  $batas  = 10;
 				  $posisi = $p->cariPosisi($batas); 
 				  // Tampilkan semua pengumuman
-					$stmtPeng = querydb_prepared(
-						"SELECT * FROM pengumuman ORDER BY id_pengumuman DESC LIMIT ?, ?",
-						"ii",
-						[(int)$posisi, (int)$batas]
-					);		 
-				  while($stmtPeng && $d=$stmtPeng->fetch_array()){
+				 	$sql = querydb("SELECT * FROM pengumuman  
+				                      ORDER BY id_pengumuman DESC LIMIT $posisi,$batas");		 
+				  while($d=$sql->fetch_array()){
 				    $tgl_posting = tgl_indo($d['tgl_posting']);
-					$pengId      = (int)($d['id_pengumuman'] ?? 0);
-					$slugPeng    = rawurlencode($d['judul_seo'] ?? '');
 				    
 				    // Tampilkan hanya sebagian isi berita
 				      $isi_pengumuman = htmlentities(strip_tags($d['isi_pengumuman'])); // membuat paragraf pada isi berita dan mengabaikan tag html
@@ -1394,14 +1373,14 @@ elseif ($module=='semuapengumuman'){
 						<div class="box-body media">
 							<div class="media-body">
 							<h3>
-								<a href="baca-pengumuman-<?php echo $pengId . '-' . $slugPeng; ?>.html"><?php echo e($d['judul']); ?></a>
+								<a href="baca-pengumuman-<?php echo $d['id_pengumuman']."-".$d['judul_seo']; ?>.html"><?php echo $d['judul']; ?></a>
 							</h3>
 
 							<ul class="list-inline small">
-								<li><i class="fa fa-calendar"></i> <?php echo e($tgl_posting); ?></li>
+								<li><i class="fa fa-calendar"></i> <?php echo $tgl_posting; ?></li>
 								<li style="margin-top: 5px;">
 									<?php echo $isi; ?>  ...
-		                            <a href="baca-pengumuman-<?php echo $pengId . '-' . $slugPeng; ?>.html">
+		                            <a href="baca-pengumuman-<?php echo $d['id_pengumuman']."-".$d['judul_seo']; ?>.html">
 		                            	<span></span>
 		                            </a>
 								</li>
@@ -1413,11 +1392,9 @@ elseif ($module=='semuapengumuman'){
 				          <?php
 					 }
 					
-				  $jmldataRow = querydb("SELECT COUNT(*) AS jml FROM pengumuman");
-				  $jmldata    = $jmldataRow ? (int)$jmldataRow->fetch_assoc()['jml'] : 0;
-				  $jmlhalaman = $p->jumlahHalaman($jmldata, $batas);
-				  $currentPage = clamp_page($_GET['halpengumuman'] ?? 1);
-				  $linkHalaman = $p->navHalaman($currentPage, $jmlhalaman);
+				  $jmldata     = querydb("SELECT * FROM pengumuman")->num_rows;
+				  $jmlhalaman  = $p->jumlahHalaman($jmldata, $batas);
+				  $linkHalaman = $p->navHalaman($_GET['halpengumuman'], $jmlhalaman);
 				  echo "<div class='col-md-12 col-sm-12 col-xs-12 text-center'>
 							<div class='row' align='center'><center><ul class='pagination'>$linkHalaman</ul></center></div></div>";
 				?>	
@@ -1432,7 +1409,7 @@ elseif ($module=='semuapengumuman'){
 <?php             
 }
 // Modul semua agenda
-elseif ($module=='semuaagenda'){
+elseif ($_GET['module']=='semuaagenda'){
 ?>
 <section class="site-content">
 	<div class="container">
@@ -1459,12 +1436,9 @@ elseif ($module=='semuaagenda'){
 				  $batas  = 6;
 				  $posisi = $p->cariPosisi($batas); 
 				  // Tampilkan semua agenda
-				  $stmtAgenda = querydb_prepared(
-					"SELECT * FROM agenda ORDER BY id_agenda DESC LIMIT ?, ?",
-					"ii",
-					[(int)$posisi, (int)$batas]
-				  );		 
-				  while($stmtAgenda && $tgd=$stmtAgenda->fetch_array()){
+				  $sql = querydb("SELECT * FROM agenda 
+				  					ORDER BY id_agenda DESC LIMIT $posisi,$batas");		 
+				  while($tgd=$sql->fetch_array()){
 				    $tgl_posting_raw = $tgd['tgl_posting']  ?? '';
 					$tgl_mulai_raw   = $tgd['tgl_mulai']    ?? '';
 					$tgl_selesai_raw = $tgd['tgl_selesai']  ?? '';
@@ -1489,36 +1463,36 @@ elseif ($module=='semuaagenda'){
 									<!-- TANGGAL -->
 									<div class="media-left">
 										<div class="event-date">
-											<p><?php echo e(konversi_tanggal("j",$tgd['tgl_mulai'])); ?></p>
-											<small class="month"><?php echo e(konversi_tanggal("M",$tgd['tgl_mulai'])); ?></small>
-											<small class="year"><?php echo e(konversi_tanggal("Y",$tgd['tgl_mulai'])); ?></small>
+											<p><?php echo konversi_tanggal("j",$tgd['tgl_mulai']); ?></p>
+											<small class="month"><?php echo konversi_tanggal("M",$tgd['tgl_mulai']); ?></small>
+											<small class="year"><?php echo konversi_tanggal("Y",$tgd['tgl_mulai']); ?></small>
 										</div>
 									</div>
 
 									<!-- ISI AGENDA -->
 									<div class="media-body">	
-										<h5 class="agenda-title"><b><?php echo e($tgd['tema']); ?></b></h5>
+										<h5 class="agenda-title"><b><?php echo $tgd['tema']; ?></b></h5>
 
 										<div class="agenda-meta small">
 
 											<div class="agenda-row">
 												<i class="fa fa-map-marker"></i>
-												<span><?php echo e($tgd['tempat']); ?></span>
+												<span><?php echo $tgd['tempat']; ?></span>
 											</div>
 											
 											<div class="agenda-row">
 												<i class="fa fa-calendar"></i>
-												<span><?php echo e($rentang_tgl); ?></span>
+												<span><?php echo $rentang_tgl; ?></span>
 											</div>
 
 											<div class="agenda-row">
 												<i class="fa fa-clock-o"></i>
-												<span>Pukul <?php echo e($tgd['jam']); ?></span>
+												<span>Pukul <?php echo $tgd['jam']; ?></span>
 											</div>
 
 											<div class="agenda-row">
 												<i class="fa fa-user"></i>
-												<span><?php echo e($tgd['pengirim']); ?></span>
+												<span><?php echo $tgd['pengirim']; ?></span>
 											</div>
 										</div>
 
@@ -1534,11 +1508,9 @@ elseif ($module=='semuaagenda'){
 				          <?php
 					 }
 					
-				  $jmldataRow = querydb("SELECT COUNT(*) AS jml FROM agenda");
-				  $jmldata    = $jmldataRow ? (int)$jmldataRow->fetch_assoc()['jml'] : 0;
-				  $jmlhalaman = $p->jumlahHalaman($jmldata, $batas);
-				  $currentPage = clamp_page($_GET['halagenda'] ?? 1);
-				  $linkHalaman = $p->navHalaman($currentPage, $jmlhalaman);
+				  $jmldata     = querydb("SELECT * FROM agenda")->num_rows;
+				  $jmlhalaman  = $p->jumlahHalaman($jmldata, $batas);
+				  $linkHalaman = $p->navHalaman($_GET['halagenda'], $jmlhalaman);
 				  echo "<div class='col-md-12 col-sm-12 col-xs-12 text-center'>
 							<div class='row' align='center'><center><ul class='pagination'>$linkHalaman</ul></center></div></div>";
 				?>	
@@ -1553,7 +1525,7 @@ elseif ($module=='semuaagenda'){
 <?php             
 }
 // MODUL DETAIL PENGUMUMAN
-elseif ($module=='detailpengumuman'){
+elseif ($_GET['module']=='detailpengumuman'){
 	 // Sanitize and validate ID
     $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
@@ -1603,10 +1575,10 @@ elseif ($module=='detailpengumuman'){
 						</div> <!-- .row -->
 					</div> <!-- .container -->
 				</div>
-				<h1 class="margin-top-15"><?php echo $judul; ?></h1>
+				<h1 class="margin-top-15"><?php echo $d['judul']; ?></h1>
 				<ul class="list-inline small font-weight-600 myriadpro">
-					<li><i class="fa fa-calendar"></i> <?php echo e($tgl_posting); ?></li>
-					<li><i class="fa fa-user"></i> <?php echo $penulis; ?></li>
+					<li><i class="fa fa-calendar"></i> <?php echo $tgl_posting; ?></li>
+					<li><i class="fa fa-user"></i> <?php echo $d['nama_lengkap']; ?></li>
 				</ul>
 				
 				<article class="news margin-bottom-15">
@@ -1616,13 +1588,13 @@ elseif ($module=='detailpengumuman'){
 				</article>
 
 		<?php
-		$shareUrl = $tiden['alamat_website'] . "/baca-pengumuman-{$d['id_pengumuman']}-" . rawurlencode($d['judul_seo'] ?? '') . ".html";
+		$shareUrl = $tiden['alamat_website'] . "/baca-pengumuman-{$d['id_pengumuman']}-{$d['judul_seo']}.html";
 		echo render_share_buttons($shareUrl, $d['judul']);
 		?>
 
 		<ul class="list-inline small font-weight-600 myriadpro">
-			<li><i class="fa fa-calendar"></i> <?php echo e($tgl_posting); ?></li>
-			<li><i class="fa fa-user"></i> <?php echo $penulis; ?></li>
+			<li><i class="fa fa-calendar"></i> <?php echo $tgl_posting; ?></li>
+			<li><i class="fa fa-user"></i> <?php echo $d['nama_lengkap']; ?></li>
 		</ul>
 
 		<div class="divider-light"></div>
@@ -1642,7 +1614,7 @@ elseif ($module=='detailpengumuman'){
 	}
 }
 // Modul semua download
-elseif ($module=='semuadownload'){
+elseif ($_GET['module']=='semuadownload'){
 ?>
 <section class="site-content">
 	<div class="container">
@@ -1675,7 +1647,7 @@ elseif ($module=='semuadownload'){
 												ORDER BY id_download DESC
 												LIMIT ?, ?",
 												"ii",
-												[(int)$posisi, (int)$batas]
+												[$posisi, $batas]
 											);
 				    while ($row = $stmt->fetch_assoc()):
 					$id        = (int)$row['id_download'];
@@ -1696,7 +1668,7 @@ elseif ($module=='semuadownload'){
                                 <div class="media-body">
                                     <h5><b><?php echo $judul; ?></b></h5>
                                     <ul class="list-inline small">
-                                        <li><b><a href="<?php echo e($downloadurl); ?>">
+                                        <li><b><a href="<?php echo $downloadurl; ?>">
                                             <i class="fa fa-download"></i>
                                             <?php echo " Telah di download sebanyak $hits kali"; ?>
                                         </a></b></li>
@@ -1714,7 +1686,10 @@ elseif ($module=='semuadownload'){
 					$totalRow    = $jmldata ? $jmldata->fetch_assoc() : ['jml' => 0];
 					$jmlhalaman  = $p->jumlahHalaman((int)$totalRow['jml'], $batas);
 
-					$currentPage = clamp_page($_GET['haldownload'] ?? 1);
+					$currentPage = isset($_GET['haldownload']) ? (int)$_GET['haldownload'] : 1;
+					if ($currentPage < 1) {
+						$currentPage = 1;
+					}
 					$linkHalaman = $p->navHalaman($currentPage, $jmlhalaman);
 					echo "<div class='col-md-12 col-sm-12 col-xs-12 text-center'>
 							<div class='row' align='center'><center><ul class='pagination'>$linkHalaman</ul></center></div></div>";
@@ -1730,7 +1705,7 @@ elseif ($module=='semuadownload'){
 <?php             
 }
 // Modul Detail Album (Lihat Gallery)
-elseif ($module=='detailalbum'){
+elseif ($_GET['module']=='detailalbum'){
 	$id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
 	if ($id < 1) {
@@ -1795,7 +1770,7 @@ elseif ($module=='detailalbum'){
 								 ORDER BY id_gallery DESC
 								 LIMIT ?, ?",
 								"iii",
-								[$id, (int)$posisi, (int)$batas]
+								[$id, $posisi, $batas]
 						  );
 
   						  $ada = $g ? $g->num_rows : 0;
@@ -1819,7 +1794,10 @@ elseif ($module=='detailalbum'){
 							$jmldataRow  = $jmldataStmt ? $jmldataStmt->fetch_assoc() : ['jml' => 0];
 						  	$jmlhalaman  = $p->jumlahHalaman((int)$jmldataRow['jml'], $batas);
 
-							$currentPage = clamp_page($_GET['halgaleri'] ?? 1);
+							$currentPage = isset($_GET['halgaleri']) ? (int) $_GET['halgaleri'] : 1;
+							if ($currentPage < 1) {
+								$currentPage = 1;
+							}
 						  	$linkHalaman = $p->navHalaman($currentPage, $jmlhalaman);	
 						?>					
 				</div><!-- .row -->
@@ -1843,7 +1821,7 @@ elseif ($module=='detailalbum'){
 	}
 }
 // Modul semua album
-elseif ($module=='semuaalbum'){
+elseif ($_GET['module']=='semuaalbum'){
  ?>
 <section class="site-content">
 	<div class="container">
@@ -1880,7 +1858,7 @@ elseif ($module=='semuaalbum'){
                   GROUP BY jdl_album
                   LIMIT ?, ?",
 					"ii",
-					[(int)$posisi, (int)$batas]
+					[$posisi, $batas]
 				);
 				if ($a) {
 				while ($w = $a->fetch_array()) {
@@ -1923,7 +1901,10 @@ elseif ($module=='semuaalbum'){
 					$totalAlbum = $jmldataRow ? $jmldataRow->fetch_assoc() : ['jml' => 0];
 					$jmlhalaman = $p->jumlahHalaman((int)$totalAlbum['jml'], $batas);
 
-					$currentPage = clamp_page($_GET['halalbum'] ?? 1);
+					$currentPage = isset($_GET['halalbum']) ? (int) $_GET['halalbum'] : 1;
+					if ($currentPage < 1) {
+						$currentPage = 1;
+					}
 					$linkHalaman = $p->navHalaman($currentPage, $jmlhalaman);	
 				?>
 							
@@ -1945,56 +1926,134 @@ elseif ($module=='semuaalbum'){
 </section>
  <?php           
 }
+
 // Modul hubungi kami
-elseif ($module=='hubungikami'){
-    // Siapkan session untuk captcha
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-    if (!isset($_SESSION['contact_csrf'])) {
-        $_SESSION['contact_csrf'] = bin2hex(random_bytes(16));
-    }
-    $contactCsrfToken = $_SESSION['contact_csrf'];
+elseif ($_GET['module']=='hubungikami'){
+?>
+<section class="site-content">
+	<div class="container">
+		<div class="row">
 
-    $errorMessage   = '';
-    $successMessage = '';
+			<div class="col-md-8 padding-bottom-20 left-column no-padding">
+				<div class="breadcrumb-wrapper bg-medium margin-bottom-20">
+					<div class="container-fluid">
+						<div class="row">
+							<div class="col-md-6 col-sm-6 col-xs-12">
+								<h1 class="breadcrumb-page-title">Contact Us</h1>
+							</div> <!-- .col-md-6 -->
+							<div class="col-md-6 col-sm-6 col-xs-12">
+								<ol class="breadcrumb">
+									<li><a href="index.html">Beranda</a></li>
+									<li>Contact Us</li>
+								</ol>
+							</div> <!-- .col-md-6 -->
+						</div> <!-- .row -->
+					</div> <!-- .container -->
+				</div> <!-- .breadcrumb-wrapper -->
 
-    // Default form data (supaya sticky kalau error)
-    $formData = [
-        'nama'   => '',
-        'email'  => '',
-        'subjek' => '',
-        'pesan'  => '',
-    ];
+				<div class="row">
+					<div class="col-md-12 col-sm-12 no-padding">
+						<div class="well">
+							<form method="post" action="hubungi-aksi.html">
+								<div class="col-md-12 col-xs-12">
+									<label>Nama Anda</label>
+									<input type="text" name="nama" class="form-control" id="nama">&nbsp;
+								</div>
+								<div class="col-md-12 col-xs-12">
+									<label>Email Anda</label>
+									<input type="text" name="email" class="form-control" id="email">&nbsp;
+								</div>
+								<div class="col-md-12 col-xs-12">
+									<label>Subjek</label>
+									<input type="text" name="subjek" class="form-control" id="subjek">&nbsp;
+								</div>
+								<div class="col-md-12 col-xs-12">
+									<label>Pesan</label>
+									<textarea class="form-control" name="pesan" id="pesan"></textarea>&nbsp;
+								</div>
+								<div class="col-md-12 col-xs-12">
+									<img src='captcha.php' width="20%"><br><br>
+									<label>Masukkan 6 kode diatas</label>&nbsp;
+									<input type="text" name="kode" size="6" maxlength="6" style="width: 30%;" class="form-control" id="subjek">&nbsp;
+								</div>
+								<hr />
+								<input value="Kirim Pesan" name="kirim" id="submit" type="submit" class="btn btn-primary btn-lg btn-block"/>
+							</form>
+						</div>
+					</div> <!-- .col-md-6 -->
 
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        // Ambil data kiriman form dengan aman
-        $nama   = trim((string)($_POST['nama']   ?? ''));
-        $email  = trim((string)($_POST['email']  ?? ''));
-        $subjek = trim((string)($_POST['subjek'] ?? ''));
-        $pesan  = trim((string)($_POST['pesan']  ?? ''));
-        $kode   = (string)($_POST['kode']        ?? '');
-        $postedContactToken  = (string)($_POST['csrf_token'] ?? '');
-        $sessionContactToken = (string)($_SESSION['contact_csrf'] ?? '');
+				</div> <!-- .row -->
+			</div> <!-- .col-md-9 -->
 
-        $formData = [
-            'nama'   => $nama,
-            'email'  => $email,
-            'subjek' => $subjek,
-            'pesan'  => $pesan,
-        ];
+			<div class="col-md-4 right-column no-padding">
+				<?php include "sidebarkanan.php"; ?>
+			</div> <!-- .col-md-4 -->
 
-        // Validasi berurutan
-        if ($postedContactToken === '' || $sessionContactToken === '' || !hash_equals($sessionContactToken, $postedContactToken)) {
-            $errorMessage = "Token tidak valid. Silakan muat ulang halaman.";
-        } elseif ($kode != ($_SESSION['captcha_session'] ?? '')) {
-            $errorMessage = "Kode keamanan yang Anda masukkan salah. Silakan ulangi kembali.";
-        } elseif ($nama === '' || $email === '' || $subjek === '' || $pesan === '') {
-            $errorMessage = "Semua field wajib diisi. Silakan lengkapi data Anda.";
+
+		</div> <!-- .row -->
+	</div> <!-- .container -->
+</section>
+<?php            
+}
+// Modul hubungi aksi
+elseif ($_GET['module']=='hubungiaksi'){
+?>
+<section class="site-content">
+	<div class="container">
+		<div class="row">
+
+			<div class="col-md-8 padding-bottom-20 left-column no-padding">
+				<div class="breadcrumb-wrapper bg-medium margin-bottom-20">
+					<div class="container-fluid">
+						<div class="row">
+							<div class="col-md-6 col-sm-6 col-xs-12">
+								<h1 class="breadcrumb-page-title">Contact Us</h1>
+							</div> <!-- .col-md-6 -->
+							<div class="col-md-6 col-sm-6 col-xs-12">
+								<ol class="breadcrumb">
+									<li><a href="index.html">Beranda</a></li>
+									<li>Contact Us</li>
+								</ol>
+							</div> <!-- .col-md-6 -->
+						</div> <!-- .row -->
+					</div> <!-- .container -->
+				</div> <!-- .breadcrumb-wrapper -->
+
+				<div class="row">
+					<div class="col-md-12 col-sm-12 no-padding">
+						<div class="well">
+<?php
+// Ambil data kiriman form dengan aman
+    $nama   = trim($_POST['nama']   ?? '');
+    $email  = trim($_POST['email']  ?? '');
+    $subjek = trim($_POST['subjek'] ?? '');
+    $pesan  = trim($_POST['pesan']  ?? '');
+    $kode   = $_POST['kode']        ?? '';
+
+    // Cek captcha dulu
+	if (session_status() === PHP_SESSION_NONE) {
+		session_start();
+	}
+
+	$errorMessage   = '';
+	$successMessage = '';
+
+    if ($kode != ($_SESSION['captcha_session'] ?? '')) {
+		$errorMessage = "Kode keamanan yang Anda masukkan salah. Silakan ulangi kembali.";
+    } 
+	else {
+
+        // Validasi sederhana
+        if ($nama === '' || $email === '' || $subjek === '' || $pesan === '') {
+            echo "<section class=\"site-content\"><div class=\"container\">
+                    <p>Semua field wajib diisi. Silakan lengkapi data Anda.</p>
+                  </div></section>";
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errorMessage = "Alamat email tidak valid. Silakan periksa kembali.";
+            echo "<section class=\"site-content\"><div class=\"container\">
+                    <p>Alamat email tidak valid. Silakan periksa kembali.</p>
+                  </div></section>";
         } else {
-            // Batasi panjang field
+            // Batasi panjang supaya tidak jebol kolom DB
             $nama   = mb_substr($nama,   0, 100);
             $email  = mb_substr($email,  0, 150);
             $subjek = mb_substr($subjek, 0, 150);
@@ -2002,143 +2061,48 @@ elseif ($module=='hubungikami'){
 
             $tgl_sekarang = date("Y-m-d");
 
-            $ok = exec_prepared(
-                "INSERT INTO hubungi (nama_pengirim, email, subjek, pesan, tanggal) VALUES (?, ?, ?, ?, ?)",
-                "sssss",
-                [$nama, $email, $subjek, $pesan, $tgl_sekarang]
-            );
+            // Gunakan prepared statement, bukan interpolasi langsung
+            global $dbconnection; // dari config/koneksi.php
 
-            if ($ok) {
-                $successMessage = "Terima kasih <strong>".htmlspecialchars($nama, ENT_QUOTES, 'UTF-8')."</strong>, pesan Anda sudah kami terima.";
-                // Kosongkan form setelah sukses
-                $formData = [
-                    'nama'   => '',
-                    'email'  => '',
-                    'subjek' => '',
-                    'pesan'  => '',
-                ];
+            $stmt = $dbconnection->prepare("
+                INSERT INTO hubungi (nama_pengirim, email, subjek, pesan, tanggal)
+                VALUES (?, ?, ?, ?, ?)
+            ");
+            if ($stmt) {
+                $stmt->bind_param("sssss", $nama, $email, $subjek, $pesan, $tgl_sekarang);
+                $stmt->execute();
+                $stmt->close();
+
+                echo "<section class=\"site-content\"><div class=\"container\">
+                        <p>Terima kasih <strong>".htmlspecialchars($nama, ENT_QUOTES, 'UTF-8')."</strong>, pesan Anda sudah kami terima.</p>
+                      </div></section>";
             } else {
-                $errorMessage = "Terjadi kesalahan saat menyimpan pesan. Silakan coba beberapa saat lagi.";
+                // fallback kalau prepare gagal
+                echo "<section class=\"site-content\"><div class=\"container\">
+                        <p>Terjadi kesalahan saat menyimpan pesan. Silakan coba beberapa saat lagi.</p>
+                      </div></section>";
             }
         }
     }
 
-    // Ganti token untuk render form berikutnya
-    $_SESSION['contact_csrf'] = bin2hex(random_bytes(16));
-    $contactCsrfToken = $_SESSION['contact_csrf'];
-
-    // Siapkan nilai aman untuk ditampilkan kembali di form
-    $captchaUrl = 'captcha.php?t=' . time();
-    $namaSafe   = e($formData['nama']);
-    $emailSafe  = e($formData['email']);
-    $subjekSafe = e($formData['subjek']);
-    $pesanSafe  = e($formData['pesan']);
 ?>
-<section class="site-content">
-    <div class="container">
-        <div class="row">
+						</div>
+					</div> 
+				</div> <!-- .row -->
+			</div> <!-- .col-md-9 -->
 
-            <div class="col-md-8 padding-bottom-20 left-column no-padding">
-                <div class="breadcrumb-wrapper bg-medium margin-bottom-20">
-                    <div class="container-fluid">
-                        <div class="row">
-                            <div class="col-md-6 col-sm-6 col-xs-12">
-                                <h1 class="breadcrumb-page-title">Contact Us</h1>
-                            </div> <!-- .col-md-6 -->
-                            <div class="col-md-6 col-sm-6 col-xs-12">
-                                <ol class="breadcrumb">
-                                    <li><a href="index.html">Beranda</a></li>
-                                    <li>Contact Us</li>
-                                </ol>
-                            </div> <!-- .col-md-6 -->
-                        </div> <!-- .row -->
-                    </div> <!-- .container -->
-                </div> <!-- .breadcrumb-wrapper -->
+			<div class="col-md-4 right-column no-padding">
+				<?php include "sidebarkanan.php"; ?>
+			</div> <!-- .col-md-4 -->
 
-                <div class="row">
-                    <div class="col-md-12 col-sm-12 no-padding">
-                        <div class="well">
-                            <?php if ($successMessage !== ''): ?>
-                                <p><?php echo $successMessage; ?></p>
-                            <?php else: ?>
-                                <?php if ($errorMessage !== ''): ?>
-                                    <p><?php echo e($errorMessage); ?></p>
-                                <?php endif; ?>
 
-                                <form method="post" action="hubungi-kami.html">
-                                    <input type="hidden" name="csrf_token" value="<?php echo e($contactCsrfToken); ?>">
-                                    <div class="col-md-12 col-xs-12">
-                                        <label>Nama Anda</label>
-                                        <input type="text" name="nama" class="form-control" id="nama" value="<?php echo $namaSafe; ?>">&nbsp;
-                                    </div>
-                                    <div class="col-md-12 col-xs-12">
-                                        <label>Email Anda</label>
-                                        <input type="text" name="email" class="form-control" id="email" value="<?php echo $emailSafe; ?>">&nbsp;
-                                    </div>
-                                    <div class="col-md-12 col-xs-12">
-                                        <label>Subjek</label>
-                                        <input type="text" name="subjek" class="form-control" id="subjek" value="<?php echo $subjekSafe; ?>">&nbsp;
-                                    </div>
-                                    <div class="col-md-12 col-xs-12">
-                                        <label>Pesan</label>
-                                        <textarea class="form-control" name="pesan" id="pesan"><?php echo $pesanSafe; ?></textarea>&nbsp;
-                                    </div>
-                                    <div class="col-md-12 col-xs-12">
-                                        <label>Kode keamanan</label><br>
-
-                                        <div class="form-group">
-                                            <img src="<?php echo e($captchaUrl); ?>"
-                                                 id="captchaImage"
-                                                 alt="Kode keamanan"
-                                                 style="max-width: 100%; width: 20%; display: inline-block; vertical-align: middle;">
-
-                                            <button type="button"
-                                                    class="btn btn-default btn-sm"
-                                                    style="margin-left: 10px; vertical-align: middle;"
-                                                    aria-label="Ganti kode"
-                                                    onclick="var img = document.getElementById('captchaImage'); img.src = 'captcha.php?' + new Date().getTime(); return false;">
-                                                <i class="fa fa-refresh" aria-hidden="true"></i>
-                                            </button>
-                                        </div>
-
-                                        <label>Masukkan 6 kode di atas</label>&nbsp;
-                                        <input type="text"
-                                               name="kode"
-                                               size="6"
-                                               maxlength="6"
-                                               style="width: 30%;"
-                                               class="form-control"
-                                               id="kode_captcha">&nbsp;
-                                    </div>
-
-                                    <hr />
-                                    <input value="Kirim Pesan" name="kirim" id="submit" type="submit" class="btn btn-primary btn-lg btn-block"/>
-                                </form>
-                            <?php endif; ?>
-                        </div>
-                    </div> <!-- .col-md-12 -->
-                </div> <!-- .row -->
-            </div> <!-- .col-md-8 -->
-
-            <div class="col-md-4 right-column no-padding">
-                <?php include "sidebarkanan.php"; ?>
-            </div> <!-- .col-md-4 -->
-
-        </div> <!-- .row -->
-    </div> <!-- .container -->
+		</div> <!-- .row -->
+	</div> <!-- .container -->
 </section>
-<?php
+<?php            
 }
-
-// Modul hubungi aksi (legacy) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ redirect ke hubungi-kami
-elseif ($module=='hubungiaksi'){
-    // Untuk kompatibilitas jika masih ada link lama ke hubungi-aksi.html
-    header("Location: hubungi-kami.html");
-    exit;
-}
-
 // Modul hasil pencarian berita 
-elseif ($module=='hasilcari'){
+elseif ($_GET['module']=='hasilcari'){
 ?>
 <section class="site-content">
 	<div class="container">
@@ -2166,7 +2130,7 @@ elseif ($module=='hasilcari'){
 						<div class="well">
 <?php
   // Ambil kata kunci dari form
-    $kata = trim((string)($_POST['kata'] ?? ''));
+    $kata = trim($_POST['kata'] ?? '');
     // Simpan versi bersih untuk ditampilkan di HTML
     $kata_tampil = htmlspecialchars($kata, ENT_QUOTES, 'UTF-8');
 
@@ -2207,7 +2171,6 @@ elseif ($module=='hasilcari'){
     }
 
   if ($ketemu > 0){
-	
     echo "<p>Ditemukan <b>$ketemu</b> berita dengan kata <font style='background-color:#00FFFF'><b>$kata_tampil</b></font> : </p>"; 
     while ($t = $hasil->fetch_array()) {
 		$id      = (int)($t['id_berita'] ?? 0);

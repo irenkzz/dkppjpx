@@ -229,7 +229,7 @@ browser.fileNameDialog = function(e, post, inputName, inputValue, url, labels, c
             name.focus();
             return;
         }
-        eval('post.' + inputName + ' = name.value;');
+        post[inputName] = name.value;
         $.ajax({
             type: 'POST',
             dataType: 'json',
@@ -284,8 +284,10 @@ browser.orderFiles = function(callBack, selected) {
         } else if (order == 'size') {
             a1 = a.size;
             b1 = b.size;
-        } else
-            eval('a1 = a.' + order + '.toLowerCase(); b1 = b.' + order + '.toLowerCase();');
+        } else {
+            a1 = (a[order] !== undefined && a[order] !== null) ? String(a[order]).toLowerCase() : '';
+            b1 = (b[order] !== undefined && b[order] !== null) ? String(b[order]).toLowerCase() : '';
+        }
 
         if ((order == 'size') || (order == 'date')) {
             if (a1 < b1) return desc ? 1 : -1;

@@ -13,49 +13,84 @@ else{
   $act    = $_GET['act'] ?? '';
   $kunci  = base64_decode($key ?? '');
 
-  // Input user
-  if ($module=='user' && $act=='input'){
-    require_post_csrf();
+  // Input user baru
+if ($module=='user' && $act=='input') {
 
-    // Hanya admin yang boleh menambah user
-    if (($_SESSION['leveluser'] ?? '') !== 'admin') {
-        echo "<script>alert('Anda tidak berhak menambah user.');history.back();</script>";
+    // Amankan input
+    $username     = trim($_POST['username'] ?? '');
+    $password_raw = trim($_POST['password'] ?? '');
+    $nama_lengkap = trim($_POST['nama_lengkap'] ?? '');
+    $email        = trim($_POST['email'] ?? '');
+
+    // Validasi dasar
+    if ($username === '' || $password_raw === '' || $nama_lengkap === '' || $email === '') {
+        echo "<script>alert('Semua field wajib diisi.');history.back();</script>";
         closedb();
         exit;
     }
 
-    $username     = trim($_POST['username'] ?? '');
-    $rawpass      = $_POST['password'] ?? '';
-    $nama_lengkap = trim($_POST['nama_lengkap'] ?? '');
-    $email        = trim($_POST['email'] ?? '');
+    // Hash password sesuai mekanisme login: md5($password.$kunci)
+    
+    include "../../../config/library.php"; // jika $kunci disimpan di sini
 
-    if ($username === '' || $rawpass === '' || $nama_lengkap === '' || $email === '') {
-      echo "<script>alert('Semua field wajib diisi');history.back();</script>";
-      closedb();
-      exit;
+    $password = md5($password_raw . $kunci);
+
+    // Generate id_session unik
+    if (function_exists('random_bytes')) {
+        $id_session = bin2hex(random_bytes(16));
+    } else {
+        $id_session = md5(uniqid('', true));
     }
 
-    $password = md5($rawpass.$kunci); // keep for compatibility with cek_login.php
+    // User baru seharusnya tidak diblokir
+    $blokir = 'N';
 
-    $stmt = $dbconnection->prepare("INSERT INTO users (username, password, nama_lengkap, email) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssss", $username, $password, $nama_lengkap, $email);
-    $stmt->execute();
-    $stmt->close();
+    // INSERT user baru
+    $stmt = $dbconnection->prepare("
+        INSERT INTO users (username, password, nama_lengkap, email, blokir, id_session)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ");
 
-    header("location:../../media.php?module=".$module);
-    exit;
-  }
+    if ($stmt) {
+        $stmt->bind_param(
+            "ssssss",
+            $username,
+            $password,
+            $nama_lengkap,
+            $email,
+            $blokir,
+            $id_session
+        );
+        $stmt->execute();
+        $stmt->close();
 
-  // Update user
+        echo "<script>alert('User baru berhasil ditambahkan.');window.location='../../media.php?module=user';</script>";
+    } else {
+        echo "<script>alert('Gagal menambahkan user (prepare error).');history.back();</script>";
+    }
+
+    closedb();
+}
+
+
+    // Update user
   elseif ($module=='user' && $act=='update'){
     require_post_csrf();
 
+    // Ambil input dasar
     $nama_lengkap = trim($_POST['nama_lengkap'] ?? '');
     $email        = trim($_POST['email'] ?? '');
     $blokir_post  = $_POST['blokir'] ?? '';
 
+    // Validasi isi
     if ($nama_lengkap === '' || $email === '') {
-      echo "<script>alert('Data tidak valid');history.back();</script>";
+      echo "<script>alert('Nama lengkap dan email wajib diisi');history.back();</script>";
+      closedb();
+      exit;
+    }
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+      echo "<script>alert('Alamat email tidak valid');history.back();</script>";
       closedb();
       exit;
     }
@@ -63,9 +98,9 @@ else{
     $is_admin   = (($_SESSION['leveluser'] ?? '') === 'admin');
     $username_s = $_SESSION['namauser'] ?? '';
 
-    // Tentukan target row yang boleh diubah
+    // Tentukan row user yang boleh diubah
     if ($is_admin) {
-        // Admin: boleh gunakan id dari POST (id_session)
+        // Admin: pakai id_session dari POST (hidden input)
         $id = trim($_POST['id'] ?? '');
         if ($id === '') {
             echo "<script>alert('ID tidak valid');history.back();</script>";
@@ -73,8 +108,8 @@ else{
             exit;
         }
 
-        // Admin boleh ubah blokir
-        $blokir = $blokir_post;
+        // Admin boleh mengubah status blokir, clamp ke Y/N
+        $blokir = ($blokir_post === 'Y') ? 'Y' : 'N';
     } else {
         // Operator: abaikan ID dari POST, pakai username session
         if ($username_s === '') {
@@ -83,7 +118,7 @@ else{
             exit;
         }
 
-        // Cari id_session + blokir berdasarkan username
+        // Cari id_session + blokir berdasarkan username (hanya miliknya sendiri)
         $stmt = $dbconnection->prepare("SELECT id_session, blokir FROM users WHERE username = ? LIMIT 1");
         $stmt->bind_param("s", $username_s);
         $stmt->execute();
@@ -97,13 +132,15 @@ else{
             exit;
         }
 
-        $id     = $row['id_session']; // paksa id ke milik sendiri
+        $id     = $row['id_session']; // paksa hanya milik sendiri
         $blokir = $row['blokir'];     // operator tidak bisa mengubah blokir
     }
 
-    // password diubah?
+    // Apakah password diubah?
     $rawpass = $_POST['password'] ?? '';
+
     if ($rawpass === '') {
+      // Tanpa ubah password
       $stmt = $dbconnection->prepare("
         UPDATE users 
            SET nama_lengkap = ?, email = ?, blokir = ?
@@ -113,7 +150,9 @@ else{
       $stmt->execute();
       $stmt->close();
     } else {
-      $password = md5($rawpass.$kunci); // keep for compatibility
+      // Ubah password juga – hash harus sama seperti login: md5(password.$kunci)
+      $password = md5($rawpass.$kunci);
+
       $stmt = $dbconnection->prepare("
         UPDATE users 
            SET nama_lengkap = ?, email = ?, blokir = ?, password = ?
@@ -127,6 +166,7 @@ else{
     header("location:../../media.php?module=".$module);
     exit;
   }
+
 
   closedb();
 }

@@ -206,10 +206,9 @@ if (isset($_GET['id'])){
 						<i class="fa fa-bar-chart"></i> Hits hari ini: <?php echo number_format($hits['hitstoday'],0,',','.'); ?> <br><br>
 						<i class="fa fa-user-o"></i> Pengunjung Online: <?php echo $pengunjungonline; ?> <br><br>
 			</div> <!-- .col-md-6 -->
-			<div class="col-sm-4 border-kiri margin-bottom-15">
-				<h5 class="myriadpro margin-bottom-15">Media Sosial</h5>
-				<iframe src="http://www.facebook.com/plugins/likebox.php?href=<?php echo $tiden['facebook']; ?>&amp;width=350px&amp;height=350&amp;colorscheme=light&amp;show_faces=true&amp;header=true&amp;stream=false&amp;show_border=true&amp;appId=352861198057415" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:100%; height:220px;" allowTransparency="true"></iframe>
-			</div> <!-- .col-md-6 -->
+
+			
+
 		</div> <!-- .row -->
 	</div> <!-- .container -->
 
@@ -353,15 +352,7 @@ $(document).ready(function(ev){
 	});
 </script>
 
-<!-- fb comments -->
-<script>(function(d, s, id) {
-var js, fjs = d.getElementsByTagName(s)[0];
-if (d.getElementById(id)) return;
-js = d.createElement(s); js.id = id;
-js.src = "../../connect.facebook.net/id_ID/all.js#xfbml=1&appId=89533811750";
-fjs.parentNode.insertBefore(js, fjs);
-}(document, 'script', 'facebook-jssdk'));
-</script>
+
 
 <script type="text/javascript" src="<?php echo "$f[folder]/"; ?>assets_baru/js/jquery.marquee.min.js"></script>
 <script type="text/javascript">
