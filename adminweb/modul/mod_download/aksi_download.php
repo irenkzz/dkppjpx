@@ -12,6 +12,7 @@ else{
 
   $module = $_GET['module'];
   $act    = $_GET['act'];
+  $fileDir = __DIR__ . '/../../../files';
 
   //Wajibkan CSRF untuk semua POST
   if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -38,8 +39,8 @@ else{
 
     if ($r && !empty($r['nama_file'])) {
         $namafile = basename($r['nama_file']); // prevent path traversal
-        @unlink("../../../files/$namafile");
-        @unlink("../../../files/small_$namafile");
+        @unlink($fileDir . '/' . $namafile);
+        @unlink($fileDir . '/small_' . $namafile);
     }
 
     // delete row securely
@@ -56,10 +57,7 @@ else{
   elseif ($module === 'download' && $act === 'input') {
     require_post_csrf();
 
-    $allowed_ext = ['jpg','jpeg','png','doc','docx','pdf'];
     $lokasi_file = $_FILES['fupload']['tmp_name'] ?? '';
-    $nama_file   = $_FILES['fupload']['name'] ?? '';
-    $ext         = strtolower(pathinfo($nama_file, PATHINFO_EXTENSION));
     $judul       = $_POST['judul'] ?? '';
 
     // no file uploaded
@@ -72,19 +70,25 @@ else{
         exit;
     }
     
-		// with file
-    if (!in_array($ext, $allowed_ext, true)) {
-        echo "<script>window.alert('Upload Gagal! Pastikan file bertipe yang diizinkan'); location=history.back();</script>";
-        exit;
-    }
-
-    $acak = random_int(1, 99);
-    $nama_file_unik = $acak . $nama_file;
-
-    $folder = "../../../files/";
-    $file_upload = $folder . $nama_file_unik;
-    if (!move_uploaded_file($lokasi_file, $file_upload)) {
-        echo "<script>window.alert('Upload gagal disimpan'); location=history.back();</script>";
+    // with file
+    try {
+        $res = upload_file_secure($_FILES['fupload'], [
+            'dest_dir'         => $fileDir,
+            'allow_ext'        => ['jpg','jpeg','png','doc','docx','pdf'],
+            'allow_mime_by_ext'=> [
+                'pdf'  => ['application/pdf'],
+                'doc'  => ['application/msword'],
+                'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'],
+                'jpg'  => ['image/jpeg'],
+                'jpeg' => ['image/jpeg'],
+                'png'  => ['image/png'],
+            ],
+            'max_bytes'        => 10 * 1024 * 1024,
+            'prefix'           => 'download_',
+        ]);
+        $nama_file_unik = $res['filename'];
+    } catch (Throwable $e) {
+        echo "<script>window.alert('Upload Gagal: " . e($e->getMessage()) . "'); location=history.back();</script>";
         exit;
     }
 
@@ -101,10 +105,7 @@ else{
   elseif ($module === 'download' && $act === 'update') {
     require_post_csrf();
 
-    $allowed_ext = ['jpg','jpeg','png','doc','docx','pdf'];
     $lokasi_file = $_FILES['fupload']['tmp_name'] ?? '';
-    $nama_file   = $_FILES['fupload']['name'] ?? '';
-    $ext         = strtolower(pathinfo($nama_file, PATHINFO_EXTENSION));
 
     $id          = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     $judul       = $_POST['judul'] ?? '';
@@ -126,24 +127,30 @@ else{
     }
 
     // with new file
-    if (!in_array($ext, $allowed_ext, true)) {
-        echo "<script>window.alert('Upload Gagal! Pastikan file bertipe yang diizinkan'); location=history.back();</script>";
-        exit;
-    }
-
-    $acak = random_int(1, 99);
-    $nama_file_unik = $acak . $nama_file;
-
-    $folder = "../../../files/";
-    $file_upload = $folder . $nama_file_unik;
-    if (!move_uploaded_file($lokasi_file, $file_upload)) {
-        echo "<script>window.alert('Upload gagal disimpan'); location=history.back();</script>";
+    try {
+        $res = upload_file_secure($_FILES['fupload'], [
+            'dest_dir'         => $fileDir,
+            'allow_ext'        => ['jpg','jpeg','png','doc','docx','pdf'],
+            'allow_mime_by_ext'=> [
+                'pdf'  => ['application/pdf'],
+                'doc'  => ['application/msword'],
+                'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'],
+                'jpg'  => ['image/jpeg'],
+                'jpeg' => ['image/jpeg'],
+                'png'  => ['image/png'],
+            ],
+            'max_bytes'        => 10 * 1024 * 1024,
+            'prefix'           => 'download_',
+        ]);
+        $nama_file_unik = $res['filename'];
+    } catch (Throwable $e) {
+        echo "<script>window.alert('Upload gagal disimpan: " . e($e->getMessage()) . "'); location=history.back();</script>";
         exit;
     }
 
     // remove old file if provided
     if (!empty($old_file)) {
-        @unlink("../../../files/$old_file");
+        @unlink($fileDir . '/' . basename($old_file));
     }
 
     $stmt = $dbconnection->prepare("UPDATE download SET judul = ?, nama_file = ? WHERE id_download = ?");

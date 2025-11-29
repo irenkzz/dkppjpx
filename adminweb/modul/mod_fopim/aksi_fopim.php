@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . "/../../includes/bootstrap.php"; // CSRF + DB helpers, secure session
+require_once __DIR__ . "/../../includes/upload_helpers.php";
 opendb();
 
 // Apabila user belum login
@@ -22,27 +23,39 @@ require_post_csrf();
 $id   = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 $update = 0;
 
-$ekstensi =  array('jpg','jpeg','png');
 $lokasi_file    = $_FILES['fupload']['tmp_name'] ?? '';
-$nama_file      = $_FILES['fupload']['name'] ?? '';
-$ext = pathinfo($nama_file, PATHINFO_EXTENSION);
 
-// Apabila gambar favicon tidak diganti (atau tidak ada gambar yang di upload)
+// Apabila gambar pimpinan tidak diganti (atau tidak ada gambar yang di upload)
+$file_dir = __DIR__ . '/../../../images';
+
 if ($id <= 0 || empty($lokasi_file)){
-		header('location:../../media.php?module='.$module.'&r=gagal');
+        header('location:../../media.php?module='.$module.'&r=gagal');
+        closedb();
+        exit;
 }
 else{
-	if(!in_array($ext,$ekstensi) ) {
-		echo '<script>alert("Ekstensi file gambar tidak diperbolehkan, silahkan coba kembali !"); location=history.back();</script>';
-	}else{
-		// folder untuk gambar favicon ada di root
-		$folder = "../../../images/";
-		$file_upload = $folder . $nama_file;
-		// upload gambar favicon
-		move_uploaded_file($_FILES["fupload"]["tmp_name"], $file_upload);
-		unlink("../../../images/$_POST[fupload_hapus]");
-		$update = exec_prepared("UPDATE identitas SET fopim = ? WHERE id_identitas = ?", "si", [$nama_file, $id]);
-	}
+    try {
+        $res = upload_image_secure($_FILES['fupload'], [
+            'dest_dir'     => $file_dir,
+            'max_bytes'    => 3 * 1024 * 1024,
+            'thumb_max_w'  => 500,
+            'thumb_max_h'  => 500,
+            'create_thumb' => false,
+            'prefix'       => 'fopim_',
+        ]);
+        $nama_file = $res['filename'];
+    } catch (Throwable $e) {
+        echo "<script>alert('Upload foto gagal: " . e($e->getMessage()) . "'); location=history.back();</script>";
+        closedb();
+        exit;
+    }
+
+    $old = basename($_POST['fupload_hapus'] ?? '');
+    if ($old !== '') {
+        @unlink($file_dir . '/' . $old);
+    }
+
+    $update = exec_prepared("UPDATE identitas SET fopim = ? WHERE id_identitas = ?", "si", [$nama_file, $id]);
 }
 if($update) 
 	header('location:../../media.php?module='.$module.'&r=sukses');
