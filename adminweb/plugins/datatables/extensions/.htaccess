@@ -1,0 +1,8 @@
+# Block access to bundled DataTables example pages which should not be exposed publicly.
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule (^|/)examples(/|$|/.*$) - [F]
+</IfModule>
+
+# Fallback for servers without mod_rewrite.
+RedirectMatch 403 (?i)^/?([^/]+/)*examples(/|$|/.*)
