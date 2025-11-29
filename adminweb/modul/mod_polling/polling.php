@@ -106,11 +106,11 @@ else{
 				</form>
               </div><!-- /.box -->
 <?php
-		break;
-		
-		case "editpolling":
-			$query = "SELECT * FROM poling WHERE id_poling='$_GET[id]'";
-			$hasil = querydb($query);
+	break;
+	
+	case "editpolling":
+			$id_poling = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+			$hasil = querydb_prepared("SELECT * FROM poling WHERE id_poling = ?", "i", [$id_poling]);
 			$r     = $hasil->fetch_array();
 ?>
 			<div class="box">

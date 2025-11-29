@@ -5,6 +5,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+	require_once __DIR__ . "/../../includes/bootstrap.php";
   $aksi = "modul/mod_listslider/aksi_listslider.php";
   function ubah_tgl2($tglnyo){
 		$fm=explode('-',$tglnyo);
@@ -54,13 +55,26 @@ else{
 					
 					$no=1;
 					while ($r=$tampil->fetch_array()){  
-						echo "<tr><td>$no</td>
-							<td width=\"350\">$r[nama_menu]</td>";
-						echo "<td>$r[keterangan]</td>
-							  <td>$r[link]</td>
-							<td align=\"center\"><a href=\"?module=listslider&act=editlistslider&id=$r[id_list]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp; 
-							<a href=\"$aksi?module=listslider&act=hapus&id=$r[id_list]\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS LIST MENU INI ?')\" title=\"Hapus Data\"><i class=\"fa fa-trash text-red\"></i></a></td>
-							</tr>";
+						?>
+						<tr>
+							<td><?php echo $no; ?></td>
+							<td width="350"><?php echo e($r['nama_menu']); ?></td>
+							<td><?php echo e($r['keterangan']); ?></td>
+							<td><?php echo e($r['link']); ?></td>
+							<td align="center">
+								<a href="?module=listslider&act=editlistslider&id=<?php echo (int)$r['id_list']; ?>" title="Edit Data">
+									<i class="fa fa-pencil"></i>
+								</a> &nbsp;
+								<form method="POST" action="<?php echo $aksi; ?>?module=listslider&act=hapus" style="display:inline;">
+									<?php csrf_field(); ?>
+									<input type="hidden" name="id" value="<?php echo (int)$r['id_list']; ?>">
+									<button type="submit" onclick="return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS LIST MENU INI ?')" title="Hapus Data" style="border:none;background:none;padding:0;cursor:pointer;">
+										<i class="fa fa-trash text-red"></i>
+									</button>
+								</form>
+							</td>
+						</tr>
+						<?php
 						$no++;
 					}
 					?>
@@ -78,6 +92,7 @@ else{
                   <h3 class="box-title">Tambah List Slider</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=listslider&act=input" class="form-horizontal" enctype="multipart/form-data">
+					<?php csrf_field(); ?>
 					<div class="box-body">
 						<div class="form-group">
 							<label for="tema" class="col-sm-2 control-label">Nama Menu</label>
@@ -108,10 +123,8 @@ else{
 	break;
 	
 	case "editlistslider":
-      
-      $query = "SELECT * FROM listslider WHERE id_list='$_GET[id]'";
-      $hasil = querydb($query);
-
+      $id_list = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+      $hasil = querydb_prepared("SELECT * FROM listslider WHERE id_list = ?", "i", [$id_list]);
       $r = $hasil->fetch_array();
 
 ?>
@@ -120,6 +133,7 @@ else{
                   <h3 class="box-title">Edit List Slider</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=listslider&act=update" class="form-horizontal" enctype="multipart/form-data">
+					<?php csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo $r['id_list']; ?>" />
 					<div class="box-body">
 						<div class="form-group">
