@@ -5,6 +5,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+  require_once __DIR__ . '/../../includes/bootstrap.php';
   $aksi = "modul/mod_templates/aksi_templates.php";
 
   // mengatasi variabel yang belum di definisikan (notice undefined index)
@@ -44,20 +45,25 @@ else{
 					$tampil = querydb($query);
 					$no=1;
 					while ($r=$tampil->fetch_array()){  
+						$judul   = e($r['judul'] ?? '');
+						$pembuat = e($r['pembuat'] ?? '');
+						$folder  = e($r['folder'] ?? '');
+						$aktif   = e($r['aktif'] ?? '');
+						$idTpl   = (int)($r['id_templates'] ?? 0);
 						echo "<tr>
 								<td>$no</td>
-								<td>$r[judul]</td>
-								<td>$r[pembuat]</td>
-								<td>$r[folder]</td>
-								<td align=\"center\">$r[aktif]</td>
+								<td>{$judul}</td>
+								<td>{$pembuat}</td>
+								<td>{$folder}</td>
+								<td align=\"center\">{$aktif}</td>
 								<td align=\"center\">
-								<a href=\"?module=templates&act=edittemplates&id=$r[id_templates]\" title=\"Edit Data\">
+								<a href=\"?module=templates&act=edittemplates&id={$idTpl}\" title=\"Edit Data\">
 									<i class=\"fa fa-pencil\"></i>
 								</a> &nbsp;
 
 								<form method=\"POST\" action=\"$aksi?module=templates&act=hapus\" style=\"display:inline;\">
 									" . csrf_field() . "
-									<input type=\"hidden\" name=\"id\" value=\"$r[id_templates]\">
+									<input type=\"hidden\" name=\"id\" value=\"{$idTpl}\">
 									<button type=\"submit\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS TEMPLATES INI ?')\" 
 											title=\"Hapus Data\" style=\"border:none;background:none;padding:0;cursor:pointer;\">
 									<i class=\"fa fa-trash text-red\"></i>
@@ -66,7 +72,7 @@ else{
 
 								<form method=\"POST\" action=\"$aksi?module=templates&act=aktifkan\" style=\"display:inline;\">
 									" . csrf_field() . "
-									<input type=\"hidden\" name=\"id\" value=\"$r[id_templates]\">
+									<input type=\"hidden\" name=\"id\" value=\"{$idTpl}\">
 									<button type=\"submit\" title=\"Aktifkan\" style=\"border:none;background:none;padding:0;cursor:pointer;\">
 									<i class=\"fa fa-check text-green\"></i>
 									</button>
@@ -130,24 +136,24 @@ else{
                   <h3 class="box-title">Edit Templates</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=templates&act=update" class="form-horizontal">
-					<input type="hidden" name="id" value="<?php echo $r['id_templates']; ?>">
+					<input type="hidden" name="id" value="<?php echo (int)($r['id_templates'] ?? 0); ?>">
 					<div class="box-body">
 						<div class="form-group">
 							<label for="nama_templates" class="col-sm-2 control-label">Nama Templates</label>
 							<div class="col-sm-6">
-								<input type="text" class="form-control" id="nama_templates" name="nama_templates" value="<?php echo $r['nama_templates']; ?>" />
+								<input type="text" class="form-control" id="nama_templates" name="nama_templates" value="<?php echo e($r['nama_templates'] ?? ''); ?>" />
 							</div>
 						</div>
 						<div class="form-group">
 							<label for="pembuat" class="col-sm-2 control-label">Pembuat</label>
 							<div class="col-sm-6">
-								<input type="text" class="form-control" id="pembuat" name="pembuat" value="<?php echo $r['pembuat']; ?>" />
+								<input type="text" class="form-control" id="pembuat" name="pembuat" value="<?php echo e($r['pembuat'] ?? ''); ?>" />
 							</div>
 						</div>
 						<div class="form-group">
 							<label for="folder" class="col-sm-2 control-label">Folder</label>
 							<div class="col-sm-6">
-								<input type="text" class="form-control" id="folder" name="folder" value="<?php echo $r['folder']; ?>" />
+								<input type="text" class="form-control" id="folder" name="folder" value="<?php echo e($r['folder'] ?? ''); ?>" />
 							</div>
 						</div>
 					</div><!-- /.box-body -->

@@ -45,13 +45,18 @@ else{
 					$tampil = querydb($query);
 					$no=1;
 					while ($r=$tampil->fetch_array()){  
-						echo "<tr><td>$no</td>
-							<td><img src=\"../foto_slider/small_$r[gmb_slider]\"></td>
-							<td><a href=\"$r[link]\" target=\"_blank\">$r[link]</a></td>
-							<td align=\"center\"><a href=\"?module=slider&act=editslider&id=$r[id_slider]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp;
-							 	<form action=\"$aksi?module=slider&act=hapus\" method=\"POST\" style=\"display:inline;\">";
+						$img     = e($r['gmb_slider'] ?? '');
+						$linkRaw = $r['link'] ?? '';
+						$link    = safe_url($linkRaw);
+						$linkTxt = e($linkRaw);
+						$idSlide = (int)($r['id_slider'] ?? 0);
+						echo "<tr><td>{$no}</td>
+							<td><img src=\"../foto_slider/small_{$img}\" alt=\"\"></td>
+							<td><a href=\"{$link}\" target=\"_blank\">{$linkTxt}</a></td>
+							<td align=\"center\"><a href=\"?module=slider&act=editslider&id={$idSlide}\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a> &nbsp;
+							 	<form action=\"{$aksi}?module=slider&act=hapus\" method=\"POST\" style=\"display:inline;\">";
 						echo csrf_field();
-						echo	"<input type=\"hidden\" name=\"id\" value=\"$r[id_slider]\">
+						echo	"<input type=\"hidden\" name=\"id\" value=\"{$idSlide}\">
 									<button type=\"submit\" onclick=\"return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS SLIDER INI ?')\" title=\"Hapus Data\" style=\"background:none;border:none;padding:0;\">
 										<i class=\"fa fa-trash text-red\"></i>
 									</button>
@@ -110,12 +115,12 @@ else{
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=slider&act=update" class="form-horizontal" enctype="multipart/form-data">
 					<?php echo csrf_field(); ?>
-					<input type="hidden" name="id" value="<?php echo $r['id_slider']; ?>" />
+					<input type="hidden" name="id" value="<?php echo (int)($r['id_slider'] ?? 0); ?>" />
 					<div class="box-body">
 						<div class="form-group">
 							<label for="link" class="col-sm-2 control-label">Link</label>
 							<div class="col-sm-10">
-								<input type="text" class="form-control" id="link" name="link" value="<?php echo $r['link']; ?>" />
+								<input type="text" class="form-control" id="link" name="link" value="<?php echo e($r['link'] ?? ''); ?>" />
 								<small>* Contoh : <b>http://www.jayapurakota.go.id</b></small>
 							</div>
 						</div>
@@ -124,7 +129,8 @@ else{
 							<div class="col-sm-10">
 								<?php
 								if ($r['gmb_slider']!=''){
-									echo "<img src=\"../foto_slider/small_$r[gmb_slider]\">";  
+									$currentImg = e($r['gmb_slider'] ?? '');
+									echo "<img src=\"../foto_slider/small_{$currentImg}\" alt=\"\">";  
 								}
 								else{
 									echo "Belum ada gambar";

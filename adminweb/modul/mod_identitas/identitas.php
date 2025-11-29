@@ -5,6 +5,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+	require_once __DIR__ . "/../../includes/bootstrap.php";
 	$aksi = "modul/mod_identitas/aksi_identitas.php";
 	$query = "SELECT * FROM identitas LIMIT 1";
     $hasil = querydb($query);
@@ -42,6 +43,7 @@ else{
 		}
 		?>
 			<form method="POST" enctype="multipart/form-data" action="<?php echo $aksi; ?>?module=identitas" class="form-horizontal">
+				<?php csrf_field(); ?>
 				<input type="hidden" name="id" value="<?php echo $r['id_identitas']; ?>">
 				<div class="box-body">
 					<div class="form-group">
@@ -194,7 +196,7 @@ else{
 							<input type="hidden" class="form-control" id="fupload_hapus" name="fupload_hapus" value="<?php echo $r['favicon']; ?>" />
 							<input type="file" class="form-control" id="fupload" name="fupload" />
 							<small>*) Apabila gambar favicon tidak diganti, dikosongkan saja.<br>
-                                *) Apabila gambar favicon diganti, nama filenya harus <b>favicon.png</b> dengan ukuran <b>50 x 50 pixel</b>.</small>
+                                *) Gunakan gambar <b>PNG</b> berukuran <b>50 x 50 pixel</b>; nama file akan diamankan otomatis.</small>
 						</div>
 					</div>
 				</div><!-- /.box-body -->

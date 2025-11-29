@@ -1,45 +1,65 @@
 <?php
-session_start();
+require_once __DIR__ . "/../../includes/bootstrap.php"; // CSRF + DB helpers, secure session
+require_once __DIR__ . "/../../includes/upload_helpers.php";
+opendb();
+
 // Apabila user belum login
-if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
+if (empty($_SESSION['namauser']) && empty($_SESSION['passuser'])){
 	echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location = '../../index.php'</script>";  
+    closedb();
+    exit;
 }
-// Apabila user sudah login dengan benar, maka terbentuklah session
+
+// Batasi hanya admin
+if (($_SESSION['leveluser'] ?? '') !== 'admin') {
+    http_response_code(403);
+    exit('Forbidden');
+}
+
+$module = $_GET['module'] ?? '';
+
+require_post_csrf();
+
+$id   = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+$update = 0;
+
+$lokasi_file    = $_FILES['fupload']['tmp_name'] ?? '';
+
+// Apabila gambar pimpinan tidak diganti (atau tidak ada gambar yang di upload)
+$file_dir = __DIR__ . '/../../../images';
+
+if ($id <= 0 || empty($lokasi_file)){
+        header('location:../../media.php?module='.$module.'&r=gagal');
+        closedb();
+        exit;
+}
 else{
-  include "../../../config/koneksi.php";
-  opendb();
-  
-  $module = $_GET['module'];
+    try {
+        $res = upload_image_secure($_FILES['fupload'], [
+            'dest_dir'     => $file_dir,
+            'max_bytes'    => 3 * 1024 * 1024,
+            'thumb_max_w'  => 500,
+            'thumb_max_h'  => 500,
+            'create_thumb' => false,
+            'prefix'       => 'fopim_',
+        ]);
+        $nama_file = $res['filename'];
+    } catch (Throwable $e) {
+        echo "<script>alert('Upload foto gagal: " . e($e->getMessage()) . "'); location=history.back();</script>";
+        closedb();
+        exit;
+    }
 
-  $id             = $_POST['id'];
+    $old = basename($_POST['fupload_hapus'] ?? '');
+    if ($old !== '') {
+        @unlink($file_dir . '/' . $old);
+    }
 
-  $ekstensi =  array('jpg','jpeg','png');
-  $lokasi_file    = $_FILES['fupload']['tmp_name'];
-  $nama_file      = $_FILES['fupload']['name'];
-  $ext = pathinfo($nama_file, PATHINFO_EXTENSION);
-
-  // Apabila gambar favicon tidak diganti (atau tidak ada gambar yang di upload)
-  if (empty($lokasi_file)){
-		header('location:../../media.php?module='.$module.'&r=gagal');
-  }
-  else{
-	if(!in_array($ext,$ekstensi) ) {
-		echo '<script>alert("Ekstensi file gambar tidak diperbolehkan, silahkan coba kembali !"); location=history.back();</script>';
-	}else{
-		// folder untuk gambar favicon ada di root
-		$folder = "../../../images/";
-		$file_upload = $folder . $nama_file;
-		// upload gambar favicon
-		move_uploaded_file($_FILES["fupload"]["tmp_name"], $file_upload);
-		unlink("../../../images/$_POST[fupload_hapus]");
-		$edit = "UPDATE identitas SET fopim = '$nama_file' WHERE id_identitas = '$id'";
-		$update=querydb($edit);
-	}
-  }
-  if($update) 
-		header('location:../../media.php?module='.$module.'&r=sukses');
-  else 
-		header('location:../../media.php?module='.$module.'&r=gagal');
-	closedb();
+    $update = exec_prepared("UPDATE identitas SET fopim = ? WHERE id_identitas = ?", "si", [$nama_file, $id]);
 }
+if($update) 
+	header('location:../../media.php?module='.$module.'&r=sukses');
+else 
+	header('location:../../media.php?module='.$module.'&r=gagal');
+closedb();
 ?>

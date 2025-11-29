@@ -18,6 +18,8 @@ function upload_image_secure(array $file, array $opts = []): array {
         'dest_dir'       => __DIR__ . '/../../foto_banner', // change to your dir
         'thumb_max_w'    => 480,
         'thumb_max_h'    => 480,
+        'create_thumb'   => true,
+        'thumb_prefix'   => 'small_',
         'jpeg_quality'   => 85,
         'preserve_alpha' => true,  // keep PNG as PNG to preserve transparency
         'prefix'         => '',    // e.g. 'banner_'
@@ -91,10 +93,10 @@ function upload_image_secure(array $file, array $opts = []): array {
     $base   = $cfg['prefix'] . $rand;
     $ext    = $outIsPng ? '.png' : '.jpg';
     $final  = $base . $ext;
-    $thumb  = 'small_' . $final;
+    $thumb  = $cfg['create_thumb'] ? $cfg['thumb_prefix'] . $final : null;
 
     $destPath  = rtrim($cfg['dest_dir'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $final;
-    $thumbPath = rtrim($cfg['dest_dir'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $thumb;
+    $thumbPath = $thumb ? rtrim($cfg['dest_dir'], DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $thumb : null;
 
     // write full-size (re-encode)
     if ($outIsPng) {
@@ -109,21 +111,25 @@ function upload_image_secure(array $file, array $opts = []): array {
     }
 
     // generate thumbnail (fit within max box, keep aspect)
-    $thumbImg = gd_resize_contain($src, $cfg['thumb_max_w'], $cfg['thumb_max_h'], $outIsPng);
-    if ($outIsPng) {
-        imagesavealpha($thumbImg, true);
-        if (!imagepng($thumbImg, $thumbPath)) throw new RuntimeException('Upload: failed to save PNG thumb.');
-    } else {
-        if (!imagejpeg($thumbImg, $thumbPath, $cfg['jpeg_quality'])) throw new RuntimeException('Upload: failed to save JPEG thumb.');
+    if ($cfg['create_thumb']) {
+        $thumbImg = gd_resize_contain($src, $cfg['thumb_max_w'], $cfg['thumb_max_h'], $outIsPng);
+        if ($outIsPng) {
+            imagesavealpha($thumbImg, true);
+            if (!imagepng($thumbImg, $thumbPath)) throw new RuntimeException('Upload: failed to save PNG thumb.');
+        } else {
+            if (!imagejpeg($thumbImg, $thumbPath, $cfg['jpeg_quality'])) throw new RuntimeException('Upload: failed to save JPEG thumb.');
+        }
+        imagedestroy($thumbImg);
     }
 
     // cleanup
-    imagedestroy($thumbImg);
     imagedestroy($src);
 
     // set safe perms
     @chmod($destPath, 0644);
-    @chmod($thumbPath, 0644);
+    if ($thumbPath) {
+        @chmod($thumbPath, 0644);
+    }
 
     return [
         'filename'      => $final,
@@ -194,6 +200,14 @@ function upload_file_secure(array $file, array $opts = []): array {
     $defaults = [
         'max_bytes'   => 10 * 1024 * 1024, // 10 MB
         'allow_ext'   => ['pdf','doc','docx','jpg','jpeg','png'],
+        'allow_mime_by_ext' => [
+            'pdf'  => ['application/pdf'],
+            'doc'  => ['application/msword'],
+            'docx' => ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'],
+            'jpg'  => ['image/jpeg'],
+            'jpeg' => ['image/jpeg'],
+            'png'  => ['image/png'],
+        ],
         'dest_dir'    => __DIR__ . '/../../files',
         'prefix'      => 'file_',
     ];
@@ -207,6 +221,13 @@ function upload_file_secure(array $file, array $opts = []): array {
     $orig  = $file['name'] ?? 'upload.bin';
     $ext   = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
     if (!in_array($ext, $cfg['allow_ext'], true)) throw new RuntimeException('Extension not allowed');
+
+    $fi   = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $fi->file($file['tmp_name']) ?: 'application/octet-stream';
+    $allowedMimes = $cfg['allow_mime_by_ext'][$ext] ?? [];
+    if (!empty($allowedMimes) && !in_array($mime, $allowedMimes, true)) {
+        throw new RuntimeException('MIME type not allowed for this extension');
+    }
 
     $rand  = bin2hex(random_bytes(12));
     $final = $cfg['prefix'] . $rand . '.' . $ext;

@@ -2,6 +2,39 @@
 $ambiliden=querydb("SELECT * FROM identitas LIMIT 1");
 $tiden=$ambiliden->fetch_array();
 
+if (!function_exists('e')) {
+    function e(?string $s): string {
+        return htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('safe_url')) {
+    /**
+     * Sanitize URLs before using them in href/src attributes.
+     * Allows http/https/mailto and rejects protocol-relative or javascript URLs.
+     */
+    function safe_url(?string $url, array $allowedSchemes = ['http', 'https', 'mailto']): string {
+        $trimmed = trim((string)$url);
+        if ($trimmed === '' || strpos($trimmed, '//') === 0) {
+            return '#';
+        }
+
+        $parts = parse_url($trimmed);
+        if ($parts === false) {
+            return '#';
+        }
+
+        if (isset($parts['scheme'])) {
+            $scheme = strtolower($parts['scheme']);
+            if (!in_array($scheme, $allowedSchemes, true)) {
+                return '#';
+            }
+        }
+
+        return htmlspecialchars($trimmed, ENT_QUOTES, 'UTF-8');
+    }
+}
+
 if (isset($_GET['id'])){
   $id_berita = (int)$_GET['id'];
   $sql = querydb_prepared("SELECT * FROM berita WHERE id_berita = ?", "i", [$id_berita]);
@@ -26,6 +59,24 @@ if (isset($_GET['id'])){
   $url = $dt['alamat_website'];
   $image = '';
 }
+
+$description_safe = e($description ?? '');
+$url_safe = safe_url($url ?? '');
+$image_safe = safe_url($image ?? '');
+$favicon_safe = safe_url($tiden['favicon'] ?? '');
+$author_safe = e($tiden['email'] ?? '');
+$site_name_safe = e($tiden['nama_pemilik'] ?? '');
+$facebook_safe = safe_url($tiden['facebook'] ?? '');
+$alamat_safe = nl2br(e($tiden['alamat'] ?? ''));
+$email_value = trim((string)($tiden['email'] ?? ''));
+$email_href  = safe_url(stripos($email_value, 'mailto:') === 0 ? $email_value : 'mailto:' . $email_value);
+$email_label = e($email_value);
+$telpon_safe = e($tiden['telpon'] ?? '');
+$fb_safe = safe_url($tiden['fb'] ?? '');
+$twitter_safe = safe_url($tiden['twitter'] ?? '');
+$tube_safe = safe_url($tiden['tube'] ?? '');
+$ig_safe = safe_url($tiden['ig'] ?? '');
+$template_style = e($tiden['wtemp'] ?? '');
  ?>
 
 <!DOCTYPE html>
@@ -34,22 +85,22 @@ if (isset($_GET['id'])){
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="shortcut icon" href="<?php echo $tiden['favicon']; ?>" />
-<meta name="author" content="<?php echo $tiden['email']; ?>" />
+<link rel="shortcut icon" href="<?php echo $favicon_safe; ?>" />
+<meta name="author" content="<?php echo $author_safe; ?>" />
 
 <title><?php include "dina_titel.php"; ?></title>
-<meta name="description" content="<?= $description ?>" />
+<meta name="description" content="<?= $description_safe ?>" />
 <meta name="keywords" content="<?php include "dina_meta2.php"; ?>" />
-<link rel="canonical" href="<?= $url ?>" />
+<link rel="canonical" href="<?= $url_safe ?>" />
 <meta property="og:locale" content="en_US" />
 <meta property="og:type" content="article" />
 <meta property="og:title" content="<?php include "dina_titel.php"; ?>" />
-<meta property="og:description" content="<?= $description ?>" />
-<meta property="og:url" content="<?= $url ?>" />
-<meta property="og:site_name" content="<?php echo $tiden['nama_pemilik']; ?>" />
-<meta property="article:publisher" content="<?php echo $tiden['facebook']; ?>" />
-<meta property="article:author" content="<?php echo $tiden['facebook']; ?>" />
-<meta property="og:image" content="<?= $image ?>" />
+<meta property="og:description" content="<?= $description_safe ?>" />
+<meta property="og:url" content="<?= $url_safe ?>" />
+<meta property="og:site_name" content="<?php echo $site_name_safe; ?>" />
+<meta property="article:publisher" content="<?php echo $facebook_safe; ?>" />
+<meta property="article:author" content="<?php echo $facebook_safe; ?>" />
+<meta property="og:image" content="<?= $image_safe ?>" />
 <meta property="og:image:width" content="300" />
 <meta property="og:image:height" content="225" />
     <meta name="robots" content="noindex, nofollow">
@@ -64,7 +115,7 @@ if (isset($_GET['id'])){
 <link href="<?php echo "$f[folder]/"; ?>assets/css/font-awesome.min.css" rel="stylesheet" />
 
 <!-- custom CSS for this web -->
-<link rel="stylesheet" type="text/css" href="<?php echo "$f[folder]/"; ?>assets_baru/css/<?php echo $tiden['wtemp']; ?>.css" />
+<link rel="stylesheet" type="text/css" href="<?php echo "$f[folder]/"; ?>assets_baru/css/<?php echo $template_style; ?>.css" />
 
 <!-- sharingButton -->
 <link rel="stylesheet" type="text/css" href="<?php echo "$f[folder]/"; ?>assets_baru/css/rrssb.css" />
@@ -120,34 +171,34 @@ if (isset($_GET['id'])){
 
 				<ul class="fa-ul margin-top-15">
 					<li><i class="fa-li fa-md link-default fa fa-home"></i>
-					<?php echo nl2br($tiden['alamat']); ?></li>
+					<?php echo $alamat_safe; ?></li>
 					<li><i class="fa-li fa-md link-default fa fa-envelope"></i>
-					<a href="mailto:<?php echo $tiden['email']; ?>"><?php echo $tiden['email']; ?></a></li>
+					<a href="<?php echo $email_href; ?>"><?php echo $email_label; ?></a></li>
 					<li><i class="fa-li fa-md link-default fa fa-fax"></i>
-					<?php echo $tiden['telpon']; ?></li>
+					<?php echo $telpon_safe; ?></li>
 				</ul>
 
 				<ul class="list-inline icon-social icon-social-color circle">
 						<li class="instagram margin-right-5 margin-top-10">
-							<a target="_BLANK" href="<?php echo $tiden['fb']; ?>" title="Facebook">
+							<a target="_BLANK" href="<?php echo $fb_safe; ?>" title="Facebook">
 							<i class="fa fa-facebook"></i>
 							<span class="sr-only">Facebook</span>
 							</a>
 						</li>
 						<li class="instagram margin-right-5 margin-top-10">
-							<a target="_BLANK" href="<?php echo $tiden['twitter']; ?>" title="Twitter">
+							<a target="_BLANK" href="<?php echo $twitter_safe; ?>" title="Twitter">
 							<i class="fa fa-twitter"></i>
 							<span class="sr-only">Twitter</span>
 							</a>
 						</li>
 						<li class="instagram margin-right-5 margin-top-10">
-							<a target="_BLANK" href="<?php echo $tiden['tube']; ?>" title="Youtube">
+							<a target="_BLANK" href="<?php echo $tube_safe; ?>" title="Youtube">
 							<i class="fa fa-youtube"></i>
 							<span class="sr-only">Youtube</span>
 							</a>
 						</li>
 						<li class="instagram margin-right-5 margin-top-10">
-							<a target="_BLANK" href="<?php echo $tiden['ig']; ?>" title="Instagram">
+							<a target="_BLANK" href="<?php echo $ig_safe; ?>" title="Instagram">
 							<i class="fa fa-instagram"></i>
 							<span class="sr-only">Instagram</span>
 							</a>
@@ -218,7 +269,7 @@ if (isset($_GET['id'])){
 			<div class="row">
 				<div class="col-xs-12 text-center">
 					<p class="copyright-text">
-					Copyright &copy; <?= date('Y') ?> Website Resmi <?php echo $tiden['nama_pemilik']; ?> All Right Reserved.
+					Copyright &copy; <?= date('Y') ?> Website Resmi <?php echo $site_name_safe; ?> All Right Reserved.
 					</p>
 
 				</div> <!-- .col-xs-12 -->
