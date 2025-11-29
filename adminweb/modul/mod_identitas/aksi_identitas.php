@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . "/../../includes/bootstrap.php"; // CSRF + DB helpers, secure session
+require_once __DIR__ . "/../../includes/upload_helpers.php";
 opendb();
 
 // Apabila user belum login
@@ -37,10 +38,7 @@ $ig             = $_POST['ig']     ?? '';
 $telpon         = $_POST['telpon'] ?? '';
 $alamat         = $_POST['alamat'] ?? '';
 
-$ekstensi    = array('jpg','jpeg','png');
 $lokasi_file = $_FILES['fupload']['tmp_name'] ?? '';
-$nama_file   = $_FILES['fupload']['name'] ?? '';
-$ext         = pathinfo($nama_file, PATHINFO_EXTENSION);
 $update      = 0;
 
 if ($id <= 0) {
@@ -74,16 +72,30 @@ if (empty($lokasi_file)){
   );
 }
 else{
-  // folder untuk gambar favicon ada di root
-  $folder = "../../../";
-  $file_upload = $folder . $nama_file;
-  // upload gambar favicon
-	if(!in_array($ext,$ekstensi) ) {
-		echo '<script>alert("Ekstensi file proposal tidak diperbolehkan, silahkan coba kembali !"); location=history.back();</script>';
-	}else{
-		move_uploaded_file($_FILES["fupload"]["tmp_name"], $file_upload);
-		unlink("../../../$_POST[fupload_hapus]");
-		$update = exec_prepared(
+    try {
+        $res = upload_image_secure($_FILES['fupload'], [
+            'dest_dir'      => dirname(__DIR__, 3),
+            'max_bytes'     => 512 * 1024,
+            'allow_mime'    => ['image/png'],
+            'thumb_max_w'   => 64,
+            'thumb_max_h'   => 64,
+            'create_thumb'  => false,
+            'preserve_alpha'=> true,
+            'prefix'        => 'favicon_',
+        ]);
+        $nama_file = $res['filename'];
+    } catch (Throwable $e) {
+        echo "<script>alert('Upload favicon gagal: " . e($e->getMessage()) . "'); location=history.back();</script>";
+        closedb();
+        exit;
+    }
+
+    $old = basename($_POST['fupload_hapus'] ?? '');
+    if ($old !== '') {
+        @unlink(dirname(__DIR__, 3) . '/' . $old);
+    }
+
+    $update = exec_prepared(
         "UPDATE identitas SET nama_pemilik = ?, nama_website = ?, alamat_website = ?, meta_deskripsi = ?, meta_keyword = ?, email = ?, twitter = ?, twitter_widget = ?, wtemp = ?, facebook = ?, favicon = ? WHERE id_identitas = ?",
         "sssssssssssi",
         [
@@ -101,7 +113,6 @@ else{
           $id
         ]
       );
-	}
 }
 if($update) 
 	header('location:../../media.php?module='.$module.'&r=sukses');

@@ -196,7 +196,7 @@ else{
 							<input type="hidden" class="form-control" id="fupload_hapus" name="fupload_hapus" value="<?php echo $r['favicon']; ?>" />
 							<input type="file" class="form-control" id="fupload" name="fupload" />
 							<small>*) Apabila gambar favicon tidak diganti, dikosongkan saja.<br>
-                                *) Apabila gambar favicon diganti, nama filenya harus <b>favicon.png</b> dengan ukuran <b>50 x 50 pixel</b>.</small>
+                                *) Gunakan gambar <b>PNG</b> berukuran <b>50 x 50 pixel</b>; nama file akan diamankan otomatis.</small>
 						</div>
 					</div>
 				</div><!-- /.box-body -->

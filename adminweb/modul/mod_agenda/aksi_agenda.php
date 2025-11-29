@@ -9,10 +9,11 @@ else{
     require_once __DIR__ . "/../../includes/bootstrap.php";      // CSRF + koneksi
     require_once __DIR__ . "/../../../config/library.php";
     require_once __DIR__ . "/../../../config/fungsi_seo.php";
-    //require_once __DIR__ . "/../../../config/fungsi_thumbnail.php";
+    require_once __DIR__ . "/../../includes/upload_helpers.php";
 
     opendb();
     global $dbconnection;
+    $fileDir = __DIR__ . "/../../../foto_banner";
 
     function ubah_tgl($tglnyo){
         $fm    = explode('/',$tglnyo);
@@ -38,14 +39,13 @@ else{
             exit;
         }
 
-        /*
-        // Ambil nama file gambar (jika ada)
+        // Ambil nama file gambar (jika ada) untuk dibersihkan
         $stmt = $dbconnection->prepare("SELECT gambar FROM agenda WHERE id_agenda = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $stmt->bind_result($gambar);
         $stmt->fetch();
-        $stmt->close();*/
+        $stmt->close();
 
         // Hapus row di database
         $stmt = $dbconnection->prepare("DELETE FROM agenda WHERE id_agenda = ?");
@@ -53,14 +53,12 @@ else{
         $stmt->execute();
         $stmt->close();
 
-        /*
         // Hapus file fisik (jika kolom gambar ada dan terisi)
         if (!empty($gambar)) {
             $base = basename($gambar);
-            @unlink(__DIR__ . "/../../../foto_agenda/$base");
-            @unlink(__DIR__ . "/../../../foto_agenda/small_$base");
+            @unlink($fileDir . "/$base");
+            @unlink($fileDir . "/small_$base");
         }
-        */
 
         header("location:../../media.php?module=".$module);
         exit;
@@ -73,10 +71,6 @@ else{
         require_post_csrf();
 
         $lokasi_file = $_FILES['fupload']['tmp_name'] ?? '';
-        $tipe_file   = $_FILES['fupload']['type'] ?? '';
-        $nama_file   = $_FILES['fupload']['name'] ?? '';
-        $acak        = rand(1,99);
-        $nama_gambar = $acak.$nama_file;
 
         $tema        = $_POST['tema']        ?? '';
         $tema_seo    = seo_title($tema);
@@ -130,16 +124,20 @@ else{
         }
         // Ada gambar upload
         else {
-            if ($tipe_file != "image/jpeg" && $tipe_file != "image/pjpeg") {
-                echo "<script>window.alert('Upload Gagal! Pastikan file yang di upload bertipe *.JPG');
-                      window.location=('../../media.php?module=agenda')</script>";
+            try {
+                $res = upload_image_secure($_FILES['fupload'], [
+                    'dest_dir'     => $fileDir,
+                    'thumb_max_w'  => 600,
+                    'thumb_max_h'  => 600,
+                    'jpeg_quality' => 85,
+                    'prefix'       => 'agenda_',
+                ]);
+                $nama_gambar = $res['filename'];
+            } catch (Throwable $e) {
+                echo "<script>window.alert('Upload Gagal: " . e($e->getMessage()) . "');history.back();</script>";
+                closedb();
                 exit;
             }
-
-            // Folder & resize mengikuti kode lama
-            $folder = "../../../foto_banner/"; // sesuai kode asal
-            $ukuran = 600;
-            UploadFoto($nama_gambar, $folder, $ukuran);
 
             // Insert dengan kolom gambar
             $stmt = $dbconnection->prepare("
@@ -186,10 +184,6 @@ else{
         require_post_csrf();
 
         $lokasi_file = $_FILES['fupload']['tmp_name'] ?? '';
-        $tipe_file   = $_FILES['fupload']['type'] ?? '';
-        $nama_file   = $_FILES['fupload']['name'] ?? '';
-        $acak        = rand(1,99);
-        $nama_gambar = $acak.$nama_file;
 
         $id          = isset($_POST['id']) ? (int)$_POST['id'] : 0;
         $tema        = $_POST['tema']        ?? '';
@@ -240,15 +234,28 @@ else{
         }
         // Gambar diganti
         else {
-            if ($tipe_file != "image/jpeg" && $tipe_file != "image/pjpeg") {
-                echo "<script>window.alert('Upload Gagal! Pastikan file yang di upload bertipe *.JPG');
-                      window.location=('../../media.php?module=agenda')</script>";
+            try {
+                $res = upload_image_secure($_FILES['fupload'], [
+                    'dest_dir'     => $fileDir,
+                    'thumb_max_w'  => 600,
+                    'thumb_max_h'  => 600,
+                    'jpeg_quality' => 85,
+                    'prefix'       => 'agenda_',
+                ]);
+                $nama_gambar = $res['filename'];
+            } catch (Throwable $e) {
+                echo "<script>window.alert('Upload Gagal: " . e($e->getMessage()) . "');history.back();</script>";
+                closedb();
                 exit;
             }
 
-            $folder = "../../../foto_banner/";
-            $ukuran = 600;
-            UploadFoto($nama_gambar, $folder, $ukuran);
+            // ambil file lama untuk dibersihkan
+            $stmt = $dbconnection->prepare("SELECT gambar FROM agenda WHERE id_agenda = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $stmt->bind_result($old_gambar);
+            $stmt->fetch();
+            $stmt->close();
 
             $stmt = $dbconnection->prepare("
                 UPDATE agenda
@@ -278,6 +285,12 @@ else{
             );
             $stmt->execute();
             $stmt->close();
+
+            if (!empty($old_gambar)) {
+                $base = basename($old_gambar);
+                @unlink($fileDir . "/$base");
+                @unlink($fileDir . "/small_$base");
+            }
 
             header("location:../../media.php?module=".$module);
             exit;
