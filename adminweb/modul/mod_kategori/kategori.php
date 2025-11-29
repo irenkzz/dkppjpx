@@ -5,6 +5,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+	require_once __DIR__ . '/../../includes/bootstrap.php';
 	$aksi = "modul/mod_kategori/aksi_kategori.php";
 
 	// mengatasi variabel yang belum di definisikan (notice undefined index)
@@ -43,11 +44,16 @@ else{
 					$tampil = querydb($query);
 					$no=1;
 					while ($r=$tampil->fetch_array()){  
-						echo "<tr><td class=\"text-center\">$no</td>
-								<td>$r[nama_kategori]</td>
-								<td>kategori-$r[id_kategori]-$r[kategori_seo].html</td>
-								<td class=\"text-center\">$r[aktif]</td>
-								<td class=\"text-center\"><a href=\"?module=kategori&act=editkategori&id=$r[id_kategori]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a></td>
+						$idKat  = (int)($r['id_kategori'] ?? 0);
+						$nama   = e($r['nama_kategori'] ?? '');
+						$seo    = e($r['kategori_seo'] ?? '');
+						$link   = e("kategori-{$idKat}-{$seo}.html");
+						$aktif  = e($r['aktif'] ?? '');
+						echo "<tr><td class=\"text-center\">{$no}</td>
+								<td>{$nama}</td>
+								<td>{$link}</td>
+								<td class=\"text-center\">{$aktif}</td>
+								<td class=\"text-center\"><a href=\"?module=kategori&act=editkategori&id={$idKat}\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a></td>
 								</tr>";
 						$no++;
 					}
@@ -86,21 +92,21 @@ else{
 		break;
 		
 		case "editkategori":
-			$query = "SELECT * FROM kategori WHERE id_kategori='$_GET[id]'";
-			$hasil = querydb($query);
-			$r     = $hasil->fetch_array();
+			$id_kategori = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+			$hasil = querydb_prepared("SELECT * FROM kategori WHERE id_kategori = ?", "i", [$id_kategori]);
+			$r     = $hasil ? $hasil->fetch_array() : [];
 ?>
 			<div class="box">
                 <div class="box-header with-border">
                   <h3 class="box-title">Edit Kategori</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=kategori&act=update" class="form-horizontal">
-					<input type="hidden" name="id" value="<?php echo $r['id_kategori']; ?>">
+					<input type="hidden" name="id" value="<?php echo (int)($r['id_kategori'] ?? 0); ?>">
 					<div class="box-body">
 						<div class="form-group">
 							<label for="nama_kategori" class="col-sm-2 control-label">Nama Kategori</label>
 							<div class="col-sm-6">
-								<input type="text" class="form-control" id="nama_kategori" name="nama_kategori" value="<?php echo $r['nama_kategori']; ?>" />
+								<input type="text" class="form-control" id="nama_kategori" name="nama_kategori" value="<?php echo e($r['nama_kategori'] ?? ''); ?>" />
 							</div>
 						</div>
 						<div class="form-group">

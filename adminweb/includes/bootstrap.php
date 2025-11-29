@@ -72,6 +72,33 @@ function e(?string $s): string {
     return htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8');
 }
 
+if (!function_exists('safe_url')) {
+    /**
+     * Sanitize URLs before using in href/src attributes.
+     * Allows http/https/mailto schemes and blocks protocol-relative/javascript payloads.
+     */
+    function safe_url(?string $url, array $allowedSchemes = ['http', 'https', 'mailto']): string {
+        $trimmed = trim((string)$url);
+        if ($trimmed === '' || strpos($trimmed, '//') === 0) {
+            return '#';
+        }
+
+        $parts = parse_url($trimmed);
+        if ($parts === false) {
+            return '#';
+        }
+
+        if (isset($parts['scheme'])) {
+            $scheme = strtolower($parts['scheme']);
+            if (!in_array($scheme, $allowedSchemes, true)) {
+                return '#';
+            }
+        }
+
+        return htmlspecialchars($trimmed, ENT_QUOTES, 'UTF-8');
+    }
+}
+
 // ---------- Database bootstrap ----------
 // This mirrors your original include pathing to load $koneksi (mysqli).
 $root = dirname(dirname(__DIR__));           // .../adminweb -> project root
