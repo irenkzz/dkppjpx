@@ -44,12 +44,18 @@ else{
 					$query  = "SELECT * FROM modul ORDER BY urutan";
 					$tampil = querydb($query);
 					while ($r=$tampil->fetch_array()){  
-						echo "<tr><td class=\"text-center\">$r[urutan]</td>
-								<td>$r[nama_modul]</td>
-								<td>$r[link]</td>
-								<td>$r[status]</td>
-								<td class=\"text-center\">$r[aktif]</td>
-								<td class=\"text-center\"><a href=\"?module=modul&act=editmodul&id=$r[id_modul]\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a></td>
+						$urutan = (int)($r['urutan'] ?? 0);
+						$nama   = e($r['nama_modul'] ?? '');
+						$link   = e($r['link'] ?? '');
+						$status = e($r['status'] ?? '');
+						$aktif  = e($r['aktif'] ?? '');
+						$idMod  = (int)($r['id_modul'] ?? 0);
+						echo "<tr><td class=\"text-center\">{$urutan}</td>
+								<td>{$nama}</td>
+								<td>{$link}</td>
+								<td>{$status}</td>
+								<td class=\"text-center\">{$aktif}</td>
+								<td class=\"text-center\"><a href=\"?module=modul&act=editmodul&id={$idMod}\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a></td>
 								</tr>";
 					}
 					?>
@@ -105,24 +111,24 @@ else{
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=modul&act=update" class="form-horizontal">
 					<?php echo csrf_field(); ?>
-					<input type="hidden" name="id" value="<?php echo $r['id_modul']; ?>">
+					<input type="hidden" name="id" value="<?php echo (int)($r['id_modul'] ?? 0); ?>">
 					<div class="box-body">
 						<div class="form-group">
 							<label for="urutan" class="col-sm-2 control-label">Urutan Menu</label>
 							<div class="col-sm-6">
-								<input type="text" class="form-control" id="urutan" name="urutan" value="<?php echo $r['urutan']; ?>" />
+								<input type="text" class="form-control" id="urutan" name="urutan" value="<?php echo e($r['urutan'] ?? ''); ?>" />
 							</div>
 						</div>
 						<div class="form-group">
 							<label for="nama_modul" class="col-sm-2 control-label">Nama Modul</label>
 							<div class="col-sm-6">
-								<input type="text" class="form-control" id="nama_modul" name="nama_modul" value="<?php echo $r['nama_modul']; ?>" />
+								<input type="text" class="form-control" id="nama_modul" name="nama_modul" value="<?php echo e($r['nama_modul'] ?? ''); ?>" />
 							</div>
 						</div>
 						<div class="form-group">
 							<label for="link" class="col-sm-2 control-label">Link</label>
 							<div class="col-sm-6">
-								<input type="text" class="form-control" id="link" name="link" value="<?php echo $r['link']; ?>" />
+								<input type="text" class="form-control" id="link" name="link" value="<?php echo e($r['link'] ?? ''); ?>" />
 							</div>
 						</div>
 						<div class="form-group">

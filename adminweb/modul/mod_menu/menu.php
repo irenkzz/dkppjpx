@@ -65,27 +65,32 @@ else{
 
 					        }
 
+					        $namaMenu = e($r['nama_menu'] ?? '');
+					        $link     = e($r['link'] ?? '');
+					        $parent   = e($parent ?? '');
+					        $aktif    = e($r['aktif'] ?? '');
+					        $idMenu   = (int)($r['id_menu'] ?? 0);
 					?><tr>
 
 					        <td><?php echo $no; ?></td>
 
-					        <td><?php echo $r['nama_menu']; ?></td>
+					        <td><?php echo $namaMenu; ?></td>
 
-					        <td><?php echo $r['link']; ?></td>
+					        <td><?php echo $link; ?></td>
 
 					        <td><?php echo $parent; ?></td>
 
-					        <td align="center"><?php echo $r['aktif']; ?></td>
+					        <td align="center"><?php echo $aktif; ?></td>
 
 					        <td align="center">
 
-					                <a href="?module=menu&amp;act=editmenu&amp;id=<?php echo $r['id_menu']; ?>" title="Edit Data"><i class="fa fa-pencil"></i></a> &nbsp;
+					                <a href="?module=menu&amp;act=editmenu&amp;id=<?php echo $idMenu; ?>" title="Edit Data"><i class="fa fa-pencil"></i></a> &nbsp;
 
 					                <form action="<?php echo $aksi; ?>?module=menu&amp;act=hapus" method="POST" style="display:inline;">
 
 					                        <?php csrf_field(); ?>
 
-					                        <input type="hidden" name="id" value="<?php echo $r['id_menu']; ?>">
+					                        <input type="hidden" name="id" value="<?php echo $idMenu; ?>">
 
 					                        <button type="submit" onclick="return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS MENU INI ?')" title="Hapus Data" style="background:none;border:none;padding:0;">
 
@@ -141,7 +146,9 @@ else{
 									$query  = "SELECT * FROM menu WHERE id_parent=0 ORDER BY id_menu";
 									$tampil = querydb($query);
 									while($r=$tampil->fetch_array()){
-										echo "<option value=\"$r[id_menu]\">$r[nama_menu]</option>";
+										$menuIdOption = (int)($r['id_menu'] ?? 0);
+										$menuTitleOpt = e($r['nama_menu'] ?? '');
+										echo "<option value=\"{$menuIdOption}\">{$menuTitleOpt}</option>";
 									}
 									?>
 								</select>
@@ -167,18 +174,18 @@ else{
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=menu&act=update" class="form-horizontal">
                                         <?php echo csrf_field(); ?>
-					<input type="hidden" name="id" value="<?php echo $r['id_menu']; ?>">
+					<input type="hidden" name="id" value="<?php echo (int)($r['id_menu'] ?? 0); ?>">
 					<div class="box-body">
 						<div class="form-group">
 							<label for="nama_menu" class="col-sm-2 control-label">Nama Menu</label>
 							<div class="col-sm-6">
-								<input type="text" class="form-control" id="nama_menu" name="nama_menu" value="<?php echo $r['nama_menu']; ?>" />
+								<input type="text" class="form-control" id="nama_menu" name="nama_menu" value="<?php echo e($r['nama_menu'] ?? ''); ?>" />
 							</div>
 						</div>
 						<div class="form-group">
 							<label for="link" class="col-sm-2 control-label">Link</label>
 							<div class="col-sm-6">
-								<input type="text" class="form-control" id="link" name="link" value="<?php echo $r['link']; ?>" />
+								<input type="text" class="form-control" id="link" name="link" value="<?php echo e($r['link'] ?? ''); ?>" />
 							</div>
 						</div>
 						<div class="form-group">
@@ -194,14 +201,16 @@ else{
 									$query2  = "SELECT * FROM menu WHERE id_parent=0 ORDER BY id_menu";
 									$tampil2 = querydb($query2);
 									while($w=$tampil2->fetch_array()){
+										$parentId   = (int)($w['id_menu'] ?? 0);
+										$parentName = e($w['nama_menu'] ?? '');
 										if ($r['id_parent']==$w['id_menu']){
-											echo "<option value=\"$w[id_menu]\" selected>$w[nama_menu]</option>";
+											echo "<option value=\"{$parentId}\" selected>{$parentName}</option>";
 										} else {
 											if ($w['id_menu']==$r['id_menu']){
 												echo "<option value=\"0\">Tanpa Level</option>";
 											}
 											else{
-												echo "<option value=\"$w[id_menu]\">$w[nama_menu]</option>";
+												echo "<option value=\"{$parentId}\">{$parentName}</option>";
 											}
 										}
 									}

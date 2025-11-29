@@ -47,25 +47,27 @@ else{
 					$no=1;
 					while ($r=$tampil->fetch_array()){
 
-					        $tgl_posting = tgl_indo($r['tgl_posting']);
+					        $tgl_posting = e(tgl_indo($r['tgl_posting']));
+					        $info_text   = e($r['info'] ?? '');
+					        $idSekilas   = (int)($r['id_sekilas'] ?? 0);
 
 					?><tr>
 
 					        <td><?php echo $no; ?></td>
 
-					        <td><?php echo $r['info']; ?></td>
+					        <td><?php echo $info_text; ?></td>
 
 					        <td><?php echo $tgl_posting; ?></td>
 
 					        <td align="center">
 
-					                <a href="?module=sekilasinfo&amp;act=editsekilasinfo&amp;id=<?php echo $r['id_sekilas']; ?>" title="Edit Data"><i class="fa fa-pencil"></i></a> &nbsp;
+					                <a href="?module=sekilasinfo&amp;act=editsekilasinfo&amp;id=<?php echo $idSekilas; ?>" title="Edit Data"><i class="fa fa-pencil"></i></a> &nbsp;
 
 					                <form action="<?php echo $aksi; ?>?module=sekilasinfo&amp;act=hapus" method="POST" style="display:inline;">
 
 					                        <?php csrf_field(); ?>
 
-					                        <input type="hidden" name="id" value="<?php echo $r['id_sekilas']; ?>">
+					                        <input type="hidden" name="id" value="<?php echo $idSekilas; ?>">
 
 					                        <button type="submit" onclick="return confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS INFO INI ?')" title="Hapus Data" style="background:none;border:none;padding:0;">
 
@@ -129,12 +131,12 @@ else{
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=sekilasinfo&act=update" class="form-horizontal" enctype="multipart/form-data">
                                         <?php echo csrf_field(); ?>
-					<input type="hidden" name="id" value="<?php echo $r['id_sekilas']; ?>" />
+					<input type="hidden" name="id" value="<?php echo (int)($r['id_sekilas'] ?? 0); ?>" />
 					<div class="box-body">
 						<div class="form-group">
 							<label for="isi_agenda" class="col-sm-2 control-label">Info</label>
 							<div class="col-sm-10">
-								<textarea class="form-control" id="info" name="info"><?php echo $r['info']; ?></textarea>
+								<textarea class="form-control" id="info" name="info"><?php echo e($r['info'] ?? ''); ?></textarea>
 							</div>
 						</div>
 					</div><!-- /.box-body -->

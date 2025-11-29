@@ -5,6 +5,33 @@ if (!function_exists('e')) {
     }
 }
 
+if (!function_exists('safe_url')) {
+    /**
+     * Sanitize URLs before placing them into href/src.
+     * Allows http/https/mailto and rejects protocol-relative / javascript URLs.
+     */
+    function safe_url(?string $url, array $allowedSchemes = ['http', 'https', 'mailto']): string {
+        $trimmed = trim((string)$url);
+        if ($trimmed === '' || strpos($trimmed, '//') === 0) {
+            return '#';
+        }
+
+        $parts = parse_url($trimmed);
+        if ($parts === false) {
+            return '#';
+        }
+
+        if (isset($parts['scheme'])) {
+            $scheme = strtolower($parts['scheme']);
+            if (!in_array($scheme, $allowedSchemes, true)) {
+                return '#';
+            }
+        }
+
+        return htmlspecialchars($trimmed, ENT_QUOTES, 'UTF-8');
+    }
+}
+
 $ambiliden=querydb("SELECT * FROM identitas LIMIT 1");
 $tiden=$ambiliden->fetch_array();
 
@@ -191,7 +218,7 @@ if ($module=='home'){
 			?>
 			<!-- Start of Slide -->
 			<div class="item <?php if($no==1){echo "active";} ?>">
-			<a href="<?php echo e($tsd['link']); ?>" target="_blank">
+			<a href="<?php echo safe_url($tsd['link']); ?>" target="_blank">
     			<!-- Slide Background -->
 				<img src="./foto_slider/<?php echo e($tsd['gmb_slider']); ?>" alt="" class="slide-image"/>
 				<!-- <div class="bs-slider-overlay"></div> -->
@@ -243,7 +270,7 @@ if ($module=='home'){
 						}
 					?>
 					<li class="<?php echo $awback[$no]; ?> margin-top-0 margin-bottom-40">
-						<a class="pie margin-top-20 margin-bottom-10" href="<?php echo e($tlist['link']); ?>" target="_blank">
+						<a class="pie margin-top-20 margin-bottom-10" href="<?php echo safe_url($tlist['link']); ?>" target="_blank">
 						<i class="fa fa-folder-open icon-circle icon-bordered fa-primary ikon-kecil" style="color: <?php echo $awicon[$no]; ?>; border-color: <?php echo $awicon[$no]; ?>;"></i><strong><?php echo e($tlist['nama_menu']); ?></strong>
 							<span><p><?php echo e($tlist['keterangan']); ?></p>
 							</span>
@@ -435,7 +462,7 @@ if ($module=='home'){
 							$ambilbanner=querydb("SELECT * FROM banner LIMIT 1");
 							$tban=$ambilbanner->fetch_array();
 						?>
-						<a href="<?php echo e($tban['link']); ?>" target="_blank">
+						<a href="<?php echo safe_url($tban['link']); ?>" target="_blank">
 							<img src="foto_banner/<?php echo e($tban['gambar']); ?>" width="100%" alt="Banner"/>
 						</a>	
 					</div>
@@ -521,7 +548,8 @@ if ($module=='home'){
 							$tgl_mulai   = tgl_indo($tgl_mulai_raw);
 							$tgl_selesai = tgl_indo($tgl_selesai_raw);
 
-							$isi_agenda  = nl2br($tgd['isi_agenda'] ?? '');
+							$isi_agenda_raw = $tgd['isi_agenda'] ?? '';
+							$isi_agenda     = nl2br(e($isi_agenda_raw));
 
 							if ($tgl_mulai == $tgl_selesai){
 								$rentang_tgl = $tgl_mulai;
@@ -1006,7 +1034,7 @@ if ($postedToken === '' || $sessionToken === '' || !hash_equals($sessionToken, $
 					  <tr class="teks_utama">
 						<td width="23%" align="left" valign="middle" bgcolor="#EFEFEF"><?php echo e($s['pilihan']); ?>&nbsp;</td>
 						<td width="1%" align="center" valign="middle" bgcolor="#EFEFEF"></td>
-						<td width="30%" align="left" valign="middle" bgcolor="#EFEFEF"><img src="images/bar.gif" width="<?php echo $gbr_vote; ?>" height="14" /></td>
+						<td width="30%" align="left" valign="middle" bgcolor="#EFEFEF"><img src="images/bar.gif" width="<?php echo (int)$gbr_vote; ?>" height="14" /></td>
 						<td width="4%" align="right" valign="middle" bgcolor="#EFEFEF"><?php echo (int)$s['rating']; ?>&nbsp;</td>
 						<td width="20%" align="left" valign="middle" bgcolor="#EFEFEF"> (<?php echo e($prosentase); ?> %)</td>
 					  </tr>
@@ -1106,7 +1134,7 @@ elseif ($module=='lihatpoling'){
 					  <tr class="teks_utama">
 						<td width="23%" align="left" valign="middle" bgcolor="#EFEFEF"><?php echo e($s['pilihan']); ?>&nbsp;</td>
 						<td width="1%" align="center" valign="middle" bgcolor="#EFEFEF"></td>
-						<td width="30%" align="left" valign="middle" bgcolor="#EFEFEF"><img src="images/bar.gif" width="<?php echo $gbr_vote; ?>" height="14" /></td>
+						<td width="30%" align="left" valign="middle" bgcolor="#EFEFEF"><img src="images/bar.gif" width="<?php echo (int)$gbr_vote; ?>" height="14" /></td>
 						<td width="4%" align="right" valign="middle" bgcolor="#EFEFEF"><?php echo (int)$s['rating']; ?>&nbsp;</td>
 						<td width="20%" align="left" valign="middle" bgcolor="#EFEFEF"> (<?php echo e($prosentase); ?> %)</td>
 					  </tr>
@@ -1473,7 +1501,8 @@ elseif ($module=='semuaagenda'){
 					$tgl_mulai   = tgl_indo($tgl_mulai_raw);
 					$tgl_selesai = tgl_indo($tgl_selesai_raw);
 
-					$isi_agenda  = nl2br($tgd['isi_agenda'] ?? '');
+					$isi_agenda_raw = $tgd['isi_agenda'] ?? '';
+					$isi_agenda  = nl2br(e($isi_agenda_raw));
 
 					if ($tgl_mulai == $tgl_selesai){
 						$rentang_tgl = $tgl_mulai;
@@ -1696,7 +1725,7 @@ elseif ($module=='semuadownload'){
                                 <div class="media-body">
                                     <h5><b><?php echo $judul; ?></b></h5>
                                     <ul class="list-inline small">
-                                        <li><b><a href="<?php echo e($downloadurl); ?>">
+                                        <li><b><a href="<?php echo safe_url($downloadurl); ?>">
                                             <i class="fa fa-download"></i>
                                             <?php echo " Telah di download sebanyak $hits kali"; ?>
                                         </a></b></li>

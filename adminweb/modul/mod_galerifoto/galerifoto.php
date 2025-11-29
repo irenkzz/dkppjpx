@@ -5,6 +5,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+	require_once __DIR__ . "/../../includes/bootstrap.php";
   $aksi = "modul/mod_galerifoto/aksi_galerifoto.php";
 
   // mengatasi variabel yang belum di definisikan (notice undefined index)
@@ -51,15 +52,21 @@ else{
 						$res = $stmt->get_result();
 						$no = 1;
 						while ($r = $res->fetch_assoc()) {
-							echo "<tr><td>$no</td>
-								<td><img src=\"../img_galeri/small_$r[gbr_gallery]\" width=\"100\" height=\"75\"></td>
-								<td>$r[jdl_gallery]</td>
-								<td>$r[jdl_album]</td>
+							$idGallery = (int)($r['id_gallery'] ?? 0);
+							$img       = e($r['gbr_gallery'] ?? '');
+							$title     = e($r['jdl_gallery'] ?? '');
+							$album     = e($r['jdl_album'] ?? '');
+							$imgSrc    = "../img_galeri/small_{$img}";
+
+							echo "<tr><td>{$no}</td>
+								<td><img src=\"{$imgSrc}\" width=\"100\" height=\"75\" alt=\"{$title}\"></td>
+								<td>{$title}</td>
+								<td>{$album}</td>
 								<td align=\"center\">
-									<a href=\"?module=galerifoto&act=editgalerifoto&id=$r[id_gallery]\"><i class=\"fa fa-pencil\"></i></a> &nbsp;
-									<form action=\"$aksi?module=galerifoto&act=hapus\" method=\"POST\" style=\"display:inline\">";
-							echo csrf_field();
-							echo	"<input type=\"hidden\" name=\"id\" value=\"$r[id_gallery]\" />
+									<a href=\"?module=galerifoto&act=editgalerifoto&id={$idGallery}\"><i class=\"fa fa-pencil\"></i></a> &nbsp;
+									<form action=\"{$aksi}?module=galerifoto&act=hapus\" method=\"POST\" style=\"display:inline\">";
+							csrf_field();
+							echo	"<input type=\"hidden\" name=\"id\" value=\"{$idGallery}\" />
 										<a href=\"#\" onclick=\"if(confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS FOTO INI ?')){ this.closest('form').submit(); } return false;\"><i class=\"fa fa-trash text-red\"></i></a>
 									</form>
 								</td>
@@ -70,15 +77,21 @@ else{
 						$stmt->bind_result($id_gallery, $jdl_gallery, $gbr_gallery, $jdl_album);
 						$no = 1;
 						while ($stmt->fetch()) {
-							echo "<tr><td>$no</td>
-								<td><img src=\"../img_galeri/small_$gbr_gallery\" width=\"100\" height=\"75\"></td>
-								<td>$jdl_gallery</td>
-								<td>$jdl_album</td>
+							$idGallery = (int)$id_gallery;
+							$img       = e($gbr_gallery ?? '');
+							$title     = e($jdl_gallery ?? '');
+							$album     = e($jdl_album ?? '');
+							$imgSrc    = "../img_galeri/small_{$img}";
+
+							echo "<tr><td>{$no}</td>
+								<td><img src=\"{$imgSrc}\" width=\"100\" height=\"75\" alt=\"{$title}\"></td>
+								<td>{$title}</td>
+								<td>{$album}</td>
 								<td align=\"center\">
-									<a href=\"?module=galerifoto&act=editgalerifoto&id=$id_gallery\"><i class=\"fa fa-pencil\"></i></a> &nbsp;
-									<form action=\"$aksi?module=galerifoto&act=hapus\" method=\"POST\" style=\"display:inline\">";
-							echo csrf_field();
-							echo			"<input type=\"hidden\" name=\"id\" value=\"$id_gallery\" />
+									<a href=\"?module=galerifoto&act=editgalerifoto&id={$idGallery}\"><i class=\"fa fa-pencil\"></i></a> &nbsp;
+									<form action=\"{$aksi}?module=galerifoto&act=hapus\" method=\"POST\" style=\"display:inline\">";
+							csrf_field();
+							echo			"<input type=\"hidden\" name=\"id\" value=\"{$idGallery}\" />
 										<a href=\"#\" onclick=\"if(confirm('APAKAH ANDA YAKIN AKAN MENGHAPUS FOTO INI ?')){ this.closest('form').submit(); } return false;\"><i class=\"fa fa-trash text-red\"></i></a>
 									</form>
 								</td>
@@ -122,12 +135,16 @@ else{
 									if (method_exists($stmt, 'get_result')) {
 										$res = $stmt->get_result();
 										while($r = $res->fetch_assoc()){
-											echo "<option value=\"$r[id_album]\">$r[jdl_album]</option>";
+											$idAlbumOpt = (int)($r['id_album'] ?? 0);
+											$albumTitle = e($r['jdl_album'] ?? '');
+											echo "<option value=\"{$idAlbumOpt}\">{$albumTitle}</option>";
 										}
 									} else {
 										$stmt->bind_result($id_album, $jdl_album);
 										while($stmt->fetch()){
-											echo "<option value=\"$id_album\">$jdl_album</option>";
+											$idAlbumOpt = (int)$id_album;
+											$albumTitle = e($jdl_album ?? '');
+											echo "<option value=\"{$idAlbumOpt}\">{$albumTitle}</option>";
 										}
 									}
 									$stmt->close();
@@ -179,12 +196,12 @@ else{
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=galerifoto&act=update" class="form-horizontal" enctype="multipart/form-data">
 					<?php echo csrf_field(); ?>
-					<input type="hidden" name="id" value="<?php echo $r['id_gallery']; ?>" />
+					<input type="hidden" name="id" value="<?php echo (int)($r['id_gallery'] ?? 0); ?>" />
 					<div class="box-body">
 						<div class="form-group">
 							<label for="judul_galeri" class="col-sm-2 control-label">Judul Foto</label>
 							<div class="col-sm-10">
-								<input type="text" class="form-control" id="judul_galeri" name="judul_galeri" value="<?php echo $r['jdl_gallery']; ?>" />
+								<input type="text" class="form-control" id="judul_galeri" name="judul_galeri" value="<?php echo e($r['jdl_gallery'] ?? ''); ?>" />
 							</div>
 						</div>
 						<div class="form-group">
@@ -200,19 +217,23 @@ else{
 									if (method_exists($stmt2, 'get_result')) {
 										$res2 = $stmt2->get_result();
 										while ($w = $res2->fetch_assoc()) {
+											$albumIdOption = (int)($w['id_album'] ?? 0);
+											$albumTitleOpt = e($w['jdl_album'] ?? '');
 											if ($r['id_album'] == $w['id_album']){
-												echo "<option value=\"$w[id_album]\" selected>$w[jdl_album]</option>";
+												echo "<option value=\"{$albumIdOption}\" selected>{$albumTitleOpt}</option>";
 											} else {
-												echo "<option value=\"$w[id_album]\">$w[jdl_album]</option>";
+												echo "<option value=\"{$albumIdOption}\">{$albumTitleOpt}</option>";
 											}
 										}
 									} else {
 										$stmt2->bind_result($id_album2, $jdl_album2);
 										while ($stmt2->fetch()) {
+											$albumIdOption = (int)$id_album2;
+											$albumTitleOpt = e($jdl_album2 ?? '');
 											if ($r['id_album'] == $id_album2){
-												echo "<option value=\"$id_album2\" selected>$jdl_album2</option>";
+												echo "<option value=\"{$albumIdOption}\" selected>{$albumTitleOpt}</option>";
 											} else {
-												echo "<option value=\"$id_album2\">$jdl_album2</option>";
+												echo "<option value=\"{$albumIdOption}\">{$albumTitleOpt}</option>";
 											}
 										}
 									}
@@ -224,7 +245,7 @@ else{
 						<div class="form-group">
 							<label for="keterangan" class="col-sm-2 control-label">Keterangan</label>
 							<div class="col-sm-10">
-								<input type="text" class="form-control" id="keterangan" name="keterangan" value="<?php echo $r['keterangan']; ?>" />
+								<input type="text" class="form-control" id="keterangan" name="keterangan" value="<?php echo e($r['keterangan'] ?? ''); ?>" />
 							</div>
 						</div>
 						<div class="form-group">
@@ -232,7 +253,8 @@ else{
 							<div class="col-sm-10">
 								<?php
 								if ($r['gbr_gallery']!=''){
-									echo "<img src=\"../img_galeri/small_$r[gbr_gallery]\">";  
+									$currentImg = e($r['gbr_gallery'] ?? '');
+									echo "<img src=\"../img_galeri/small_{$currentImg}\" alt=\"\">";  
 								}
 								else{
 									echo "Belum ada foto";
