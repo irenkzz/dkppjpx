@@ -5,6 +5,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+	require_once __DIR__ . "/../../includes/bootstrap.php";
 	$aksi = "modul/mod_identitas/aksi_identitas.php";
 	$query = "SELECT * FROM identitas LIMIT 1";
     $hasil = querydb($query);
@@ -42,6 +43,7 @@ else{
 		}
 		?>
 			<form method="POST" enctype="multipart/form-data" action="<?php echo $aksi; ?>?module=identitas" class="form-horizontal">
+				<?php csrf_field(); ?>
 				<input type="hidden" name="id" value="<?php echo $r['id_identitas']; ?>">
 				<div class="box-body">
 					<div class="form-group">
