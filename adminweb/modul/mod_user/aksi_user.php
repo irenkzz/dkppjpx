@@ -1,20 +1,27 @@
 <?php
-session_start();
+require_once __DIR__ . "/../../includes/bootstrap.php"; // secure session, CSRF + DB helpers
+opendb();
+
 // Apabila user belum login
-if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
+if (empty($_SESSION['namauser']) && empty($_SESSION['passuser'])){
     echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location = '../../index.php'</script>";
+    closedb();
+    exit;
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-  require_once __DIR__ . "/../../includes/bootstrap.php"; // require_post_csrf(), csrf_field(), e(), etc.
-  opendb();
- 
   $module = $_GET['module'] ?? '';
   $act    = $_GET['act'] ?? '';
-  $kunci  = base64_decode($key ?? '');
+  $is_admin = (($_SESSION['leveluser'] ?? '') === 'admin');
 
   // Input user baru
-if ($module=='user' && $act=='input') {
+  if ($module=='user' && $act=='input') {
+    require_post_csrf();
+
+    if (!$is_admin) {
+        http_response_code(403);
+        exit('Forbidden');
+    }
 
     // Amankan input
     $username     = trim($_POST['username'] ?? '');
@@ -29,11 +36,8 @@ if ($module=='user' && $act=='input') {
         exit;
     }
 
-    // Hash password sesuai mekanisme login: md5($password.$kunci)
-    
-    include "../../../config/library.php"; // jika $kunci disimpan di sini
-
-    $password = md5($password_raw . $kunci);
+    // Hash password menggunakan password_hash (modern)
+    $password = password_hash($password_raw, PASSWORD_DEFAULT);
 
     // Generate id_session unik
     if (function_exists('random_bytes')) {
@@ -70,7 +74,7 @@ if ($module=='user' && $act=='input') {
     }
 
     closedb();
-}
+  }
 
 
     // Update user
@@ -150,8 +154,8 @@ if ($module=='user' && $act=='input') {
       $stmt->execute();
       $stmt->close();
     } else {
-      // Ubah password juga – hash harus sama seperti login: md5(password.$kunci)
-      $password = md5($rawpass.$kunci);
+      // Ubah password juga menggunakan password_hash
+      $password = password_hash($rawpass, PASSWORD_DEFAULT);
 
       $stmt = $dbconnection->prepare("
         UPDATE users 
