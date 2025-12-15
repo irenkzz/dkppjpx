@@ -94,6 +94,36 @@ function query_result($result, $row, $field)
     return $data[$field];  // Kembalikan data dari kolom yang diinginkan
 }
 
+/**
+ * Check whether a column exists in a table (returns bool, suppresses errors).
+ */
+function db_column_exists($table, $column)
+{
+    global $dbconnection, $dbname;
+    if (!$dbconnection instanceof mysqli) {
+        return false;
+    }
+
+    $sql = "
+        SELECT COUNT(*) AS cnt
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
+    ";
+    $stmt = $dbconnection->prepare($sql);
+    if (!$stmt) {
+        return false;
+    }
+    $stmt->bind_param("sss", $dbname, $table, $column);
+    if (!$stmt->execute()) {
+        $stmt->close();
+        return false;
+    }
+    $res = $stmt->get_result();
+    $row = $res ? $res->fetch_assoc() : null;
+    $stmt->close();
+    return isset($row['cnt']) ? ((int)$row['cnt'] > 0) : false;
+}
+
 
 
 $key="SU5ESElAIyE=";
