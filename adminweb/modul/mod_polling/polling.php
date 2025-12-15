@@ -5,9 +5,14 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+	if (!isset($_SESSION['leveluser']) || $_SESSION['leveluser'] !== 'admin') {
+		echo "<script>alert('Anda tidak memiliki izin untuk mengakses modul ini.'); window.location = '/admin';</script>";
+		exit;
+	}
+
 	require_once __DIR__ . "/../../includes/bootstrap.php";
 
-	$aksi = "modul/mod_polling/aksi_polling.php";
+	$aksi = "/adminweb/modul/mod_polling/aksi_polling.php";
 
 	// mengatasi variabel yang belum di definisikan (notice undefined index)
 	$act = isset($_GET['act']) ? $_GET['act'] : ''; 
@@ -50,8 +55,30 @@ else{
                         <tr>
                             <td class="text-center"><?php echo $no; ?></td>
                             <td><?php echo e($r['pilihan']); ?></td>
-                            <td><?php echo e($r['status']); ?></td>
-                            <td class="text-center"><?php echo e($r['aktif']); ?></td>
+                            <td>
+                                <?php
+                                $statusVal = isset($r['status']) ? $r['status'] : '';
+                                if ($statusVal === 'Jawaban') {
+                                    echo '<span class="label label-success">Jawaban</span>';
+                                } elseif ($statusVal === 'Pertanyaan') {
+                                    echo '<span class="label label-primary">Pertanyaan</span>';
+                                } else {
+                                    echo '<span class="label label-default">'.e($statusVal).'</span>';
+                                }
+                                ?>
+                            </td>
+                            <td class="text-center">
+                                <?php
+                                $aktifVal = isset($r['aktif']) ? $r['aktif'] : '';
+                                if ($aktifVal === 'Y') {
+                                    echo '<span class="label label-success">Aktif</span>';
+                                } elseif ($aktifVal === 'N') {
+                                    echo '<span class="label label-default">Tidak</span>';
+                                } else {
+                                    echo '<span class="label label-default">'.e($aktifVal).'</span>';
+                                }
+                                ?>
+                            </td>
                             <td class="text-center"><?php echo e($r['rating']); ?></td>
                             <td class="text-center">
                                 <form action="<?php echo $aksi; ?>?module=polling&act=hapus" method="POST" style="display:inline;">
@@ -142,13 +169,12 @@ else{
 						<div class="form-group">
 							<label for="aktif" class="col-sm-2 control-label">Aktif</label>
 							<div class="col-sm-6">
-								<?php if($r['aktif']=="Y") { ?>
-								<label><input type="radio" class="minimal" id="aktif" name="aktif" value="Y" checked> Y &nbsp; </label>
-								<label><input type="radio" class="minimal" id="aktif" name="aktif" value="N"> N </label>
-								<?php } else { ?>
-								<label><input type="radio" class="minimal" id="aktif" name="aktif" value="Y"> Y &nbsp; </label>
-								<label><input type="radio" class="minimal" id="aktif" name="aktif" value="N" checked> N </label>
-								<?php } ?>
+								<?php $aktifVal = (isset($r['aktif']) && $r['aktif'] === 'Y') ? 'Y' : 'N'; ?>
+								<div class="yn-toggle" data-name="aktif" data-yes="Y" data-no="N">
+									<input type="hidden" name="aktif" value="<?php echo $aktifVal; ?>">
+									<button type="button" class="btn btn-default btn-xs yn-yes">Aktif</button>
+									<button type="button" class="btn btn-default btn-xs yn-no">Tidak</button>
+								</div>
 							</div>
 						</div>
 					</div><!-- /.box-body -->

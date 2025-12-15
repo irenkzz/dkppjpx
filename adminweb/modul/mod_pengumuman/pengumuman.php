@@ -6,8 +6,11 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
 	require_once __DIR__ . "/../../includes/bootstrap.php";
-  	$aksi = "modul/mod_pengumuman/aksi_pengumuman.php";
- 	function ubah_tgl2($tglnyo){
+  	$aksi     = "/adminweb/modul/mod_pengumuman/aksi_pengumuman.php";
+    $isAdmin  = (($_SESSION['leveluser'] ?? '') === 'admin');
+    $username = $_SESSION['namauser'] ?? '';
+
+    function ubah_tgl2($tglnyo){
 		$fm=explode('-',$tglnyo);
 		$tahun=$fm[0];
 		$bulan=$fm[1];
@@ -16,6 +19,31 @@ else{
 		$sekarang=$tgll."/".$bulan."/".$tahun;
 		return $sekarang;
 	}
+
+    function revision_label_class_peng($status) {
+      $s = strtoupper(trim((string)$status));
+      if ($s === 'APPROVED') return 'label-success';
+      if ($s === 'REJECTED') return 'label-danger';
+      if ($s === 'PENDING') return 'label-warning';
+      return 'label-default';
+    }
+
+    $myRevisions = array();
+    if (!$isAdmin) {
+      $revRes = querydb_prepared(
+        "SELECT rev_id, pengumuman_id, judul, status, created_at, approved_at, approved_by, note
+           FROM pengumuman_revisions
+          WHERE created_by = ?
+          ORDER BY rev_id DESC
+          LIMIT 20",
+        "s",
+        array($username)
+      );
+      while ($revRes && $row = $revRes->fetch_assoc()) {
+        $myRevisions[] = $row;
+      }
+    }
+
   // mengatasi variabel yang belum di definisikan (notice undefined index)
   $act = isset($_GET['act']) ? $_GET['act'] : '';  
 ?>
@@ -42,26 +70,42 @@ else{
                       <tr>
                         <th>No</th>
                         <th>Judul</th>
+                        <th>Status</th>
                         <th>Tanggal Posting</th>
                         <th>Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
 					<?php
-					if ($_SESSION['leveluser']=='admin'){
-						$query  = "SELECT * FROM pengumuman ORDER BY id_pengumuman DESC";
+					if ($isAdmin){
+						$query  = "
+              SELECT p.*,
+                     (SELECT COUNT(*) FROM pengumuman_revisions pr WHERE pr.pengumuman_id = p.id_pengumuman AND pr.status = 'PENDING') AS pending_rev
+                FROM pengumuman p
+               ORDER BY p.id_pengumuman DESC";
 						$tampil = querydb($query);
 					}
 					else{
-						$query  = "SELECT * FROM pengumuman WHERE username='$_SESSION[namauser]' ORDER BY id_pengumuman DESC";
-						$tampil = querydb($query);
+						$query  = "
+              SELECT p.*,
+                     (SELECT COUNT(*) FROM pengumuman_revisions pr WHERE pr.pengumuman_id = p.id_pengumuman AND pr.status = 'PENDING') AS pending_rev
+                FROM pengumuman p
+               WHERE p.username= ?
+               ORDER BY p.id_pengumuman DESC";
+						$tampil = querydb_prepared($query, "s", array($username));
 					}
 					$no=1;
-					while ($r = $tampil->fetch_array()) {
+					while ($tampil && ($r = $tampil->fetch_array())) {
 						$tgl_posting = tgl_indo($r['tgl_posting']);
+            $pendingCount = isset($r['pending_rev']) ? (int)$r['pending_rev'] : 0;
+            $statusLabel  = '<span class="label label-success">Live</span>';
+            if ($isAdmin) {
+              $statusLabel .= ' <span class="badge '.($pendingCount > 0 ? 'bg-yellow' : 'bg-green').'">'.$pendingCount.' pending</span>';
+            }
 
 						echo "<tr><td>$no</td>";
 						echo "<td width=\"350\">" . e($r['judul']) . "</td>";
+            echo "<td>$statusLabel</td>";
 						echo "<td align=\"center\">$tgl_posting</td>";
 						echo "<td align=\"center\">
 								<a href=\"?module=pengumuman&act=editpengumuman&id=".(int)$r['id_pengumuman']."\" title=\"Edit Data\">
@@ -86,6 +130,36 @@ else{
                   </table>
                 </div><!-- /.box-body -->
               </div><!-- /.box -->
+
+          <?php if (!$isAdmin): ?>
+            <div class="box box-info">
+              <div class="box-header with-border">
+                <h3 class="box-title">Pengajuan Saya</h3>
+              </div>
+              <div class="box-body table-responsive no-padding">
+                <table class="table table-striped">
+                  <thead>
+                    <tr><th>ID Revisi</th><th>Judul</th><th>Status</th><th>Target</th><th>Catatan</th><th>Dibuat</th><th>Diproses</th></tr>
+                  </thead>
+                  <tbody>
+                    <?php if (empty($myRevisions)): ?>
+                      <tr><td colspan="7">Belum ada pengajuan revisi.</td></tr>
+                    <?php else: foreach ($myRevisions as $rev): ?>
+                      <tr>
+                        <td>#<?php echo (int)$rev['rev_id']; ?></td>
+                        <td><?php echo e($rev['judul']); ?></td>
+                        <td><span class="label <?php echo revision_label_class_peng($rev['status']); ?>"><?php echo e($rev['status']); ?></span></td>
+                        <td><?php echo $rev['pengumuman_id'] ? 'Edit ID '.$rev['pengumuman_id'] : 'Pengumuman Baru'; ?></td>
+                        <td><?php echo e($rev['note'] ?? ''); ?></td>
+                        <td><?php echo e($rev['created_at'] ?? ''); ?></td>
+                        <td><?php echo e($rev['approved_at'] ?? '-'); ?><?php echo !empty($rev['approved_by']) ? ' oleh '.e($rev['approved_by']) : ''; ?></td>
+                      </tr>
+                    <?php endforeach; endif; ?>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          <?php endif; ?>
 <?php
 	break;
 	
@@ -98,6 +172,9 @@ else{
                 <form method="POST" action="<?php echo $aksi; ?>?module=pengumuman&act=input" class="form-horizontal" enctype="multipart/form-data">
 					<?php csrf_field(); ?>
 					<div class="box-body">
+            <div class="alert alert-info">
+              Pengumuman baru akan menunggu persetujuan admin sebelum tampil ke publik.
+            </div>
 						<div class="form-group">
 							<label for="tema" class="col-sm-2 control-label">Judul</label>
 							<div class="col-sm-10">
@@ -122,7 +199,7 @@ else{
 	case "editpengumuman":
 		$id = (int)($_GET['id'] ?? 0);
 
-		if ($_SESSION['leveluser'] == 'admin') {
+		if ($isAdmin) {
 			$stmt = $dbconnection->prepare("SELECT * FROM pengumuman WHERE id_pengumuman = ?");
 			$stmt->bind_param("i", $id);
 		} else {
@@ -134,7 +211,12 @@ else{
 		$stmt->execute();
 		$hasil = $stmt->get_result();
 		$r = $hasil->fetch_array();
+    $stmt->close();
 
+    if (!$r) {
+      echo "<p>Data pengumuman tidak ditemukan atau akses ditolak.</p>";
+      break;
+    }
 
 ?>
 			<div class="box">
@@ -145,6 +227,9 @@ else{
 					<?php csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo $r['id_pengumuman']; ?>" />
 					<div class="box-body">
+            <div class="alert alert-info">
+              Perubahan akan diproses sebagai revisi dan membutuhkan persetujuan admin.
+            </div>
 						<div class="form-group">
 							<label for="tema" class="col-sm-2 control-label">Judul</label>
 							<div class="col-sm-10">

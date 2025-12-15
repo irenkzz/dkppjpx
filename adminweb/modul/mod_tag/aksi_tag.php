@@ -1,6 +1,5 @@
 <?php
 session_start();
-include_once __DIR__ . "/../../../config/koneksi.php";
 include_once __DIR__ . "/../../../config/library.php";
 include_once __DIR__ . "/../../../config/fungsi_seo.php"; // for seo_title()
 include_once __DIR__ . "/../../includes/bootstrap.php";   // adds require_post_csrf(), csrf_field(), e(), etc.
@@ -23,7 +22,7 @@ if ($module == 'tag' && $act == 'input') {
             [$nama_tag, $tag_seo, $pilihan]
         );
     }
-    header('location:../../media.php?module=tag');
+    header('Location: /admin?module=tag');
     exit;
 }
 
@@ -42,7 +41,7 @@ if ($module == 'tag' && $act == 'update') {
             [$nama_tag, $tag_seo, $pilihan, $id]
         );
     }
-    header('location:../../media.php?module=tag');
+    header('Location: /admin?module=tag');
     exit;
 }
 
@@ -53,7 +52,7 @@ if ($module == 'tag' && $act == 'hapus') {
     if ($id > 0) {
         exec_prepared("DELETE FROM tag WHERE id_tag = ?", "i", [$id]);
     }
-    header('location:../../media.php?module=tag');
+    header('Location: /admin?module=tag');
     exit;
 }
 

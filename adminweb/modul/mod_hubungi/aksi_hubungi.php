@@ -25,7 +25,7 @@ else{
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id <= 0) {
-        header("Location: ../../media.php?module=".$module);
+        header("Location: /admin?module=".$module);
         exit;
     }
 
@@ -35,7 +35,7 @@ else{
       $stmt->execute();
       $stmt->close();
 
-      header("Location: ../../media.php?module=".$module);
+      header("Location: /admin?module=".$module);
       exit;
     }
   closedb();

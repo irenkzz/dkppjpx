@@ -6,7 +6,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
 	require_once __DIR__ . "/../../includes/bootstrap.php";
-	$aksi = "modul/mod_logo/aksi_logo.php";
+	$aksi = "/adminweb/modul/mod_logo/aksi_logo.php";
 	$query = "SELECT id_identitas, logo FROM identitas LIMIT 1";
     $hasil = querydb($query);
     $r     = $hasil->fetch_array();

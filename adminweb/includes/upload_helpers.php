@@ -196,6 +196,71 @@ function gd_resize_contain($src, int $maxW, int $maxH, bool $asPng) {
     return $dst;
 }
 
+/**
+ * Ensure an album cover taken from gallery also exists inside img_album (with its thumbnail).
+ * Returns true if the main cover file is present in img_album after the operation.
+ */
+function sync_album_cover_files(string $filename, ?string $rootDir = null): bool {
+    $filename = trim($filename);
+    if ($filename === '') return false;
+
+    $root    = $rootDir ?: dirname(__DIR__, 2);
+    $albumDir   = rtrim($root, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'img_album';
+    $galleryDir = rtrim($root, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'img_galeri';
+
+    if (!is_dir($albumDir)) {
+        @mkdir($albumDir, 0755, true);
+    }
+
+    $srcMain   = $galleryDir . DIRECTORY_SEPARATOR . $filename;
+    $srcThumb  = $galleryDir . DIRECTORY_SEPARATOR . 'small_' . $filename;
+    $destMain  = $albumDir . DIRECTORY_SEPARATOR . $filename;
+    $destThumb = $albumDir . DIRECTORY_SEPARATOR . 'small_' . $filename;
+
+    $mainExists = is_file($destMain);
+    if (is_file($srcMain) && (!$mainExists || filesize($destMain) === 0)) {
+        @copy($srcMain, $destMain);
+        $mainExists = is_file($destMain);
+    }
+
+    $thumbExists = is_file($destThumb);
+    if (is_file($srcThumb) && (!$thumbExists || filesize($destThumb) === 0)) {
+        @copy($srcThumb, $destThumb);
+        $thumbExists = is_file($destThumb);
+    }
+
+    if (!$thumbExists && $mainExists) {
+        $info = @getimagesize($destMain);
+        if ($info) {
+            $mime = $info['mime'] ?? '';
+            $asPng = false;
+            if ($mime === 'image/png') {
+                $img = @imagecreatefrompng($destMain);
+                $asPng = true;
+            } elseif ($mime === 'image/gif') {
+                $img = @imagecreatefromgif($destMain);
+                $asPng = true;
+            } else {
+                $img = @imagecreatefromjpeg($destMain);
+                $asPng = false;
+            }
+            if ($img) {
+                $thumb = gd_resize_contain($img, 360, 360, $asPng);
+                if ($asPng) {
+                    imagesavealpha($thumb, true);
+                    @imagepng($thumb, $destThumb);
+                } else {
+                    @imagejpeg($thumb, $destThumb, 85);
+                }
+                imagedestroy($thumb);
+                imagedestroy($img);
+            }
+        }
+    }
+
+    return $mainExists;
+}
+
 function upload_file_secure(array $file, array $opts = []): array {
     $defaults = [
         'max_bytes'   => 10 * 1024 * 1024, // 10 MB

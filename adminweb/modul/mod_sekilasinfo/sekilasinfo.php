@@ -6,7 +6,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
   require_once __DIR__ . '/../../includes/bootstrap.php';
-  $aksi = "modul/mod_sekilasinfo/aksi_sekilasinfo.php";
+  $aksi = "/adminweb/modul/mod_sekilasinfo/aksi_sekilasinfo.php";
  
   // mengatasi variabel yang belum di definisikan (notice undefined index)
   $act = isset($_GET['act']) ? $_GET['act'] : '';  

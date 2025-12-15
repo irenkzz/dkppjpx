@@ -5,7 +5,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-	$aksi = "modul/mod_tag/aksi_tag.php";
+	$aksi = "/adminweb/modul/mod_tag/aksi_tag.php";
 
 	// mengatasi variabel yang belum di definisikan (notice undefined index)
 	$act = isset($_GET['act']) ? $_GET['act'] : ''; 
@@ -47,7 +47,13 @@ else{
 						echo '<tr>';
 						echo '  <td class="text-center">'.$no.'</td>';
 						echo '  <td>'.e($r['nama_tag']).'</td>';
-						echo '  <td class="text-center">'.e($r['pilihan']).'</td>';
+						$pilihanVal = isset($r['pilihan']) ? $r['pilihan'] : '';
+						$pilihanBadge = ($pilihanVal === 'Y')
+							? '<span class="label label-success">Pilihan</span>'
+							: ($pilihanVal === 'N'
+								? '<span class="label label-default">Tidak</span>'
+								: '<span class="label label-default">'.e($pilihanVal).'</span>');
+						echo '  <td class="text-center">'.$pilihanBadge.'</td>';
 						echo '  <td class="text-center">';
 						echo '    <a href="?module=tag&act=edittag&id='.$r['id_tag'].'" title="Edit Data"><i class="fa fa-pencil"></i></a> &nbsp;';
 						echo '    <form method="POST" action="'.$aksi.'?module=tag&act=hapus" style="display:inline" onsubmit="return confirm(\'APAKAH ANDA YAKIN AKAN MENGHAPUS TAG INI ?\')">';
@@ -119,20 +125,12 @@ else{
 						<div class="form-group">
 							<label for="pilihan" class="col-sm-2 control-label">Pilihan</label>
 							<div class="col-sm-6">
-								<?php
-								if($r['pilihan']=="Y") {
-								?>
-									<label><input type="radio" class="minimal" id="pilihan" name="pilihan" value="Y" checked> Y &nbsp; </label>
-									<label><input type="radio" class="minimal" id="pilihan" name="pilihan" value="N"> N </label>
-								<?php
-								}
-								elseif($r['pilihan']=="N") {
-								?>
-									<label><input type="radio" class="minimal" id="pilihan" name="pilihan" value="Y"> Y &nbsp; </label>
-									<label><input type="radio" class="minimal" id="pilihan" name="pilihan" value="N" checked> N </label>
-								<?php
-								}
-								?>
+								<?php $pilihanVal = (isset($r['pilihan']) && $r['pilihan'] === 'Y') ? 'Y' : 'N'; ?>
+								<div class="yn-toggle" data-name="pilihan" data-yes="Y" data-no="N">
+									<input type="hidden" name="pilihan" value="<?php echo $pilihanVal; ?>">
+									<button type="button" class="btn btn-default btn-xs yn-yes">Ya</button>
+									<button type="button" class="btn btn-default btn-xs yn-no">Tidak</button>
+								</div>
 							</div>
 						</div>
 					</div><!-- /.box-body -->

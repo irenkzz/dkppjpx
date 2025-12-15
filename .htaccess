@@ -1,34 +1,79 @@
 <IfModule mod_rewrite.c>
-RewriteEngine on
+RewriteEngine On
 
+# ---- 1. LOGIN & ADMINWEB ----
+
+# /admin -> ke dashboard admin
+RewriteRule ^admin/?$ adminweb/media.php?module=beranda [L,QSA]
+
+# /login -> ke form login admin
+RewriteRule ^login/?$ adminweb/index.php [L,QSA]
+
+# (lalu lanjut dengan semua RewriteRule yang sudah kamu punya)
+
+
+
+# Kalau orang akses langsung /adminweb/ atau /adminweb/index.php via URL,
+# paksa ke /login (tidak mengganggu internal include)
+RewriteCond %{THE_REQUEST} \s/+adminweb/(index\.php)?\s [NC]
+RewriteRule ^adminweb/(index\.php)?$ /login [R=301,L]
+
+# Kalau orang akses langsung /adminweb/media.php via URL, paksa juga ke /login
+RewriteCond %{THE_REQUEST} \s/+adminweb/media\.php\?? [NC]
+RewriteRule ^adminweb/media\.php$ /login [R=301,L]
+
+# ---- 2. FRONTEND PRETTY URL ----
+
+# Beranda
 RewriteRule ^$ media.php?module=home [L]
 RewriteRule ^index\.html$ media.php?module=home [L]
-RewriteRule ^galeri-(.*)\.html$ zoom.php?id=$1 [L]
-RewriteRule ^baca-berita-(.*)-(.*)\.html$ media.php?module=detailberita&id=$1 [L]
-RewriteRule ^arsip-agenda\.html$ media.php?module=semuaagenda&id=$1 [L]
-RewriteRule ^statis-(.*)\.html$ media.php?module=halamanstatis&id=$1 [L]
-RewriteRule ^arsip-pengumuman\.html$ media.php?module=semuapengumuman&id=$1 [L]
-RewriteRule ^halpengumuman-(.*)\.html$ media.php?module=semuapengumuman&halpengumuman=$1 [L]
-RewriteRule ^baca-pengumuman-(.*)-(.*)\.html$ media.php?module=detailpengumuman&id=$1 [L]
-RewriteRule ^hasil-pencarian\.html$ media.php?module=hasilcari&id=$1 [L]
-RewriteRule ^indeks-berita\.html$ media.php?module=indeksberita&id=$1 [L]
-RewriteRule ^hasil-poling\.html$ media.php?module=hasilpoling&id=$1 [L]
-RewriteRule ^lihat-poling\.html$ media.php?module=lihatpoling&id=$1 [L]
-RewriteRule ^profil-kami\.html$ media.php?module=profilkami&id=$1 [L]
-RewriteRule ^hubungi-kami\.html$ media.php?module=hubungikami&id=$1 [L]
-RewriteRule ^hubungi-aksi\.html$ media.php?module=hubungiaksi&id=$1 [L]
-RewriteRule ^semua-berita\.html$ media.php?module=semuaberita&id=$1 [L]
-RewriteRule ^halberita-(.*)\.html$ media.php?module=semuaberita&halberita=$1 [L]
-RewriteRule ^kategori-([0-9]+)-(.*)\.html$ media.php?module=detailkategori&id=$1 [L]
-RewriteRule ^halkategori-([0-9]+)-(.*)\.html$ media.php?module=detailkategori&id=$1&halkategori=$2 [L]
-RewriteRule ^semua-download\.html$ media.php?module=semuadownload&id=$1 [L]
-RewriteRule ^haldownload-(.*)\.html$ media.php?module=semuadownload&haldownload=$1 [L]
-RewriteRule ^arsip-foto\.html$ media.php?module=semuaalbum&id=$1 [L]
-RewriteRule ^halalbum-(.*)\.html$ media.php?module=semuaalbum&halalbum=$1 [L]
-RewriteRule ^lihat-foto-([0-9]+)-(.*)\.html$ media.php?module=detailalbum&id=$1 [L]
-RewriteRule ^halgaleri-([0-9]+)-(.*)\.html$ media.php?module=detailalbum&id=$1&halgaleri=$2 [L]
-RewriteRule ^halkomentar-(.*)-([0-9]+)\.html$ media.php?module=detailberita&id=$1&halkomentar=$2 [L]
 
+# Galeri zoom lama
+RewriteRule ^galeri-(.+)\.html$ zoom.php?id=$1 [L,QSA]
+
+# Berita
+RewriteRule ^baca-berita-([0-9]+)-(.+)\.html$ media.php?module=detailberita&id=$1 [L,QSA]
+RewriteRule ^indeks-berita\.html$ media.php?module=indeksberita [L,QSA]
+RewriteRule ^semua-berita\.html$ media.php?module=semuaberita [L,QSA]
+RewriteRule ^halberita-([0-9]+)\.html$ media.php?module=semuaberita&halberita=$1 [L,QSA]
+RewriteRule ^kategori-([0-9]+)-(.+)\.html$ media.php?module=detailkategori&id=$1 [L,QSA]
+RewriteRule ^halkategori-([0-9]+)-(.+)\.html$ media.php?module=detailkategori&id=$1&halkategori=$2 [L,QSA]
+RewriteRule ^halkomentar-([0-9]+)-([0-9]+)\.html$ media.php?module=detailberita&id=$1&halkomentar=$2 [L,QSA]
+
+# Halaman statis
+RewriteRule ^struktur-organisasi/?$ media.php?module=struktur [L,QSA]
+RewriteRule ^struktur-organisasi\.html$ media.php?module=struktur [L,QSA]
+RewriteRule ^statis-([0-9]+)-(.+)\.html$ media.php?module=halamanstatis&id=$1 [L,QSA]
+
+# Pencarian
+RewriteRule ^hasil-pencarian\.html$ media.php?module=hasilcari [L,QSA]
+
+# Agenda
+RewriteRule ^arsip-agenda\.html$ media.php?module=semuaagenda [L,QSA]
+
+# Pengumuman
+RewriteRule ^arsip-pengumuman\.html$ media.php?module=semuapengumuman [L,QSA]
+RewriteRule ^halpengumuman-([0-9]+)\.html$ media.php?module=semuapengumuman&halpengumuman=$1 [L,QSA]
+RewriteRule ^baca-pengumuman-([0-9]+)-(.+)\.html$ media.php?module=detailpengumuman&id=$1 [L,QSA]
+
+# Polling
+RewriteRule ^hasil-poling\.html$ media.php?module=hasilpoling [L,QSA]
+RewriteRule ^lihat-poling\.html$ media.php?module=lihatpoling [L,QSA]
+
+# Profil & kontak
+RewriteRule ^profil-kami\.html$ media.php?module=profilkami [L,QSA]
+RewriteRule ^hubungi-kami\.html$ media.php?module=hubungikami [L,QSA]
+RewriteRule ^hubungi-aksi\.html$ media.php?module=hubungiaksi [L,QSA]
+
+# Download
+RewriteRule ^semua-download\.html$ media.php?module=semuadownload [L,QSA]
+RewriteRule ^haldownload-([0-9]+)\.html$ media.php?module=semuadownload&haldownload=$1 [L,QSA]
+
+# Album foto (ini yang dipakai arsip-foto & lihat-foto)
+RewriteRule ^arsip-foto\.html$ media.php?module=semuaalbum [L,QSA]
+RewriteRule ^halalbum-([0-9]+)\.html$ media.php?module=semuaalbum&halalbum=$1 [L,QSA]
+RewriteRule ^lihat-foto-([0-9]+)-(.+)\.html$ media.php?module=detailalbum&id=$1 [L,QSA]
+RewriteRule ^halgaleri-([0-9]+)-(.+)\.html$ media.php?module=detailalbum&id=$1&halgaleri=$2 [L,QSA]
 
 Options All -Indexes
 </IfModule>

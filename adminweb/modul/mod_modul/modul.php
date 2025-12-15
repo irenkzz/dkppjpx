@@ -6,7 +6,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-	$aksi = "modul/mod_modul/aksi_modul.php";
+	$aksi = "/adminweb/modul/mod_modul/aksi_modul.php";
 
 	// mengatasi variabel yang belum di definisikan (notice undefined index)
 	$act = isset($_GET['act']) ? $_GET['act'] : ''; 
@@ -153,20 +153,12 @@ else{
 						<div class="form-group">
 							<label for="aktif" class="col-sm-2 control-label">Aktif</label>
 							<div class="col-sm-6">
-								<?php
-								if($r['aktif']=="Y") {
-								?>
-									<label><input type="radio" class="minimal" id="aktif" name="aktif" value="Y" checked> Y &nbsp; </label>
-									<label><input type="radio" class="minimal" id="aktif" name="aktif" value="N"> N </label>
-								<?php
-								}
-								elseif($r['aktif']=="N") {
-								?>
-									<label><input type="radio" class="minimal" id="aktif" name="aktif" value="Y"> Y &nbsp; </label>
-									<label><input type="radio" class="minimal" id="aktif" name="aktif" value="N" checked> N </label>
-								<?php
-								}
-								?>
+								<?php $aktifVal = (isset($r['aktif']) && $r['aktif'] === 'Y') ? 'Y' : 'N'; ?>
+								<div class="yn-toggle" data-name="aktif" data-yes="Y" data-no="N">
+									<input type="hidden" name="aktif" value="<?php echo $aktifVal; ?>">
+									<button type="button" class="btn btn-default btn-xs yn-yes">Aktif</button>
+									<button type="button" class="btn btn-default btn-xs yn-no">Tidak</button>
+								</div>
 							</div>
 						</div>
 					</div><!-- /.box-body -->

@@ -33,7 +33,7 @@ else{
     $stmt->execute();
     $stmt->close();
 
-    header("location:../../media.php?module=".$module);
+    header("Location: /admin?module=".$module);
     exit;
   }
 
@@ -57,7 +57,7 @@ else{
     $stmt->execute();
     $stmt->close();
 
-    header("location:../../media.php?module=".$module);
+    header("Location: /admin?module=".$module);
     exit;
   }
   closedb();

@@ -13,9 +13,7 @@ $jam_sekarang = date("H:i:s");
 $nama_bln=array(1=> "Januari", "Februari", "Maret", "April", "Mei", 
                     "Juni", "Juli", "Agustus", "September", 
                     "Oktober", "November", "Desember");
-?>
 
-<?php
 function render_share_buttons(string $url, string $title = ''): string {
     // escape untuk output HTML
     $safeUrl   = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');

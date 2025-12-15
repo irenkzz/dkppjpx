@@ -1,12 +1,8 @@
 <?php
-// Apabila user belum login
-if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
-	echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location = 'index.php'</script>"; 
-}
-// Apabila user sudah login dengan benar, maka terbentuklah session
+require_once __DIR__ . '/includes/bootstrap.php';
+require_admin_login();
 
-else{
-	include "../config/library.php";
+include "../config/library.php";
 
   // Home (Beranda)
   if ($_GET['module']=='beranda'){   
@@ -30,6 +26,20 @@ else{
   elseif ($_GET['module']=='modul'){
     if($_SESSION['leveluser']=="admin"){
       include "modul/mod_modul/modul.php";
+    }
+  }
+
+  // Audit Log
+  elseif ($_GET['module']=='auditlog'){
+    if($_SESSION['leveluser']=="admin"){
+      include "modul/mod_auditlog/auditlog.php";
+    }
+  }
+
+  // Approval Queue
+  elseif ($_GET['module']=='approvalqueue'){
+    if($_SESSION['leveluser']=="admin"){
+      include "modul/mod_approvalqueue/approvalqueue.php";
     }
   }
 
@@ -74,7 +84,9 @@ else{
 
   // Banner
   elseif ($_GET['module']=='banner'){
+    if($_SESSION['leveluser']=="admin"){
       include "modul/mod_banner/banner.php";
+    }
   }
 
   // Slider
@@ -86,12 +98,16 @@ else{
 
   // Polling
   elseif ($_GET['module']=='polling'){
+    if($_SESSION['leveluser']=="admin"){
       include "modul/mod_polling/polling.php";
+    }
   }
  
   // Download
   elseif ($_GET['module']=='download'){
+    if($_SESSION['leveluser']=="admin"){
       include "modul/mod_download/download.php";
+    }
   }
 
   // Hubungi Kami
@@ -183,5 +199,4 @@ else{
 
 <?php
 	}
-}
 ?>

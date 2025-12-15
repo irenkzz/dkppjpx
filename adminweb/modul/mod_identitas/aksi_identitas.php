@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . "/../../includes/bootstrap.php"; // CSRF + DB helpers, secure session
 require_once __DIR__ . "/../../includes/upload_helpers.php";
+require_once __DIR__ . "/../../inc/audit_log.php";
 opendb();
 
 // Apabila user belum login
@@ -42,7 +43,7 @@ $lokasi_file = $_FILES['fupload']['tmp_name'] ?? '';
 $update      = 0;
 
 if ($id <= 0) {
-  header('location:../../media.php?module='.$module.'&r=gagal');
+  header('Location: /admin?module='.$module.'&r=gagal');
   exit;
 }
 
@@ -114,9 +115,17 @@ else{
         ]
       );
 }
-if($update) 
-	header('location:../../media.php?module='.$module.'&r=sukses');
-else 
-	header('location:../../media.php?module='.$module.'&r=gagal');
+$extraAudit = array(
+    'nama_website' => $judul_website,
+    'email'        => $email,
+);
+
+if($update) {
+    audit_event('identitas', 'UPDATE', 'identitas', $id, 'Identitas updated', null, null, $extraAudit);
+    header('Location: /admin?module='.$module.'&r=sukses');
+}
+else {
+    header('Location: /admin?module='.$module.'&r=gagal');
+}
 closedb();
 ?>

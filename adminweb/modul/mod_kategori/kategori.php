@@ -6,7 +6,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
 	require_once __DIR__ . '/../../includes/bootstrap.php';
-	$aksi = "modul/mod_kategori/aksi_kategori.php";
+	$aksi = "/adminweb/modul/mod_kategori/aksi_kategori.php";
 
 	// mengatasi variabel yang belum di definisikan (notice undefined index)
 	$act = isset($_GET['act']) ? $_GET['act'] : ''; 
@@ -49,10 +49,15 @@ else{
 						$seo    = e($r['kategori_seo'] ?? '');
 						$link   = e("kategori-{$idKat}-{$seo}.html");
 						$aktif  = e($r['aktif'] ?? '');
+						$aktifBadge = ($aktif === 'Y')
+							? '<span class="label label-success">Aktif</span>'
+							: ($aktif === 'N'
+								? '<span class="label label-default">Tidak</span>'
+								: '<span class="label label-default">'.($aktif === '' ? '-' : $aktif).'</span>');
 						echo "<tr><td class=\"text-center\">{$no}</td>
 								<td>{$nama}</td>
 								<td>{$link}</td>
-								<td class=\"text-center\">{$aktif}</td>
+								<td class=\"text-center\">{$aktifBadge}</td>
 								<td class=\"text-center\"><a href=\"?module=kategori&act=editkategori&id={$idKat}\" title=\"Edit Data\"><i class=\"fa fa-pencil\"></i></a></td>
 								</tr>";
 						$no++;
@@ -75,6 +80,7 @@ else{
                   <h3 class="box-title">Tambah Kategori</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=kategori&act=input" class="form-horizontal">
+					<?php csrf_field(); ?>
 					<div class="box-body">
 						<div class="form-group">
 							<label for="nama_kategori" class="col-sm-2 control-label">Nama Kategori</label>
@@ -101,6 +107,7 @@ else{
                   <h3 class="box-title">Edit Kategori</h3>
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=kategori&act=update" class="form-horizontal">
+					<?php csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo (int)($r['id_kategori'] ?? 0); ?>">
 					<div class="box-body">
 						<div class="form-group">
@@ -112,20 +119,12 @@ else{
 						<div class="form-group">
 							<label for="aktif" class="col-sm-2 control-label">Aktif</label>
 							<div class="col-sm-6">
-								<?php
-								if($r['aktif']=="Y") {
-								?>
-									<label><input type="radio" class="minimal" id="aktif" name="aktif" value="Y" checked> Y &nbsp; </label>
-									<label><input type="radio" class="minimal" id="aktif" name="aktif" value="N"> N </label>
-								<?php
-								}
-								elseif($r['aktif']=="N") {
-								?>
-									<label><input type="radio" class="minimal" id="aktif" name="aktif" value="Y"> Y &nbsp; </label>
-									<label><input type="radio" class="minimal" id="aktif" name="aktif" value="N" checked> N </label>
-								<?php
-								}
-								?>
+								<?php $aktifVal = (isset($r['aktif']) && $r['aktif'] === 'Y') ? 'Y' : 'N'; ?>
+								<div class="yn-toggle" data-name="aktif" data-yes="Y" data-no="N">
+									<input type="hidden" name="aktif" value="<?php echo $aktifVal; ?>">
+									<button type="button" class="btn btn-default btn-xs yn-yes">Aktif</button>
+									<button type="button" class="btn btn-default btn-xs yn-no">Tidak</button>
+								</div>
 							</div>
 						</div>
 					</div><!-- /.box-body -->

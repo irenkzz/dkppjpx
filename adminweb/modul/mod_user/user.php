@@ -6,7 +6,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
     require_once __DIR__ . "/../../includes/bootstrap.php";
-    $aksi = "modul/mod_user/aksi_user.php";
+    $aksi = "/adminweb/modul/mod_user/aksi_user.php";
 
     // mengatasi variabel yang belum di definisikan (notice undefined index)
     $act = isset($_GET['act']) ? $_GET['act'] : '';
@@ -53,7 +53,7 @@ else{
                         <th>Nama Lengkap</th>
                         <th>Email</th>
                         <th>Level</th>
-                        <th>Blokir</th>
+                        <th>Status</th>
                         <th>Aksi</th>
                       </tr>
                     </thead>
@@ -66,6 +66,11 @@ else{
                         $email        = e($r['email'] ?? '');
                         $level        = e($r['level'] ?? '');
                         $blokir       = e($r['blokir'] ?? '');
+                        $blokirBadge  = ($blokir === 'Y')
+                            ? '<span class="label label-danger">Blokir</span>'
+                            : ($blokir === 'N'
+                                ? '<span class="label label-success">Aktif</span>'
+                                : '<span class="label label-default">'.($blokir === '' ? '-' : $blokir).'</span>');
                         $id_session   = htmlspecialchars($r['id_session'] ?? '', ENT_QUOTES, 'UTF-8');
                         echo '<tr>
                                  <td>'.$no.'</td>
@@ -73,7 +78,7 @@ else{
                                  <td>'.$nama_lengkap.'</td>
                                  <td><a href="mailto:'.$email.'">'.$email.'</a></td>
                                  <td>'.$level.'</td>
-                                 <td align="center">'.$blokir.'</td>
+                                 <td align="center">'.$blokirBadge.'</td>
                                  <td align="center">
                                      <a href="?module=user&amp;act=edituser&amp;id='.$id_session.'">
                                          <i class="fa fa-pencil"></i>
@@ -160,7 +165,7 @@ else{
 
             $r = $hasil ? $hasil->fetch_array() : null;
             if (!$r) {
-                header("Location: ../../media.php?module=user");
+                header("Location: /admin?module=user");
                 exit;
             }
     ?>
@@ -212,13 +217,12 @@ else{
                         <div class="form-group">
                             <label for="blokir" class="col-sm-3 control-label">Blokir</label>
                             <div class="col-sm-6">
-                                <?php if($r['blokir']=="Y") { ?>
-                                    <label><input type="radio" class="minimal" id="blokir" name="blokir" value="Y" checked> Y &nbsp; </label>
-                                    <label><input type="radio" class="minimal" id="blokir" name="blokir" value="N"> N </label>
-                                <?php } else { ?>
-                                    <label><input type="radio" class="minimal" id="blokir" name="blokir" value="Y"> Y &nbsp; </label>
-                                    <label><input type="radio" class="minimal" id="blokir" name="blokir" value="N" checked> N </label>
-                                <?php } ?>
+                                <?php $blokirVal = (isset($r['blokir']) && $r['blokir'] === 'Y') ? 'Y' : 'N'; ?>
+                                <div class="yn-toggle" data-name="blokir" data-yes="Y" data-no="N">
+                                    <input type="hidden" name="blokir" value="<?php echo $blokirVal; ?>">
+                                    <button type="button" class="btn btn-default btn-xs yn-yes">Blokir</button>
+                                    <button type="button" class="btn btn-default btn-xs yn-no">Tidak</button>
+                                </div>
                             </div>
                         </div>
                     </div><!-- /.box-body -->
@@ -252,6 +256,12 @@ else{
                             <div class="col-sm-6">
                                 <input type="text" class="form-control" id="email" name="email"
                                        value="<?php echo $email; ?>" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label">Blokir</label>
+                            <div class="col-sm-6">
+                                <p class="form-control-static"><?php echo ($blokir === 'Y') ? 'Blokir' : 'Tidak'; ?></p>
                             </div>
                         </div>
                     </div><!-- /.box-body -->

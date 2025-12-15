@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . "/../../includes/bootstrap.php"; // secure session, CSRF + DB helpers
+require_once __DIR__ . "/../../inc/audit_log.php";
 opendb();
 
 // Apabila user belum login
@@ -25,9 +26,10 @@ if ($module=='templates' AND $act=='hapus'){
   $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
   if ($id > 0) {
     exec_prepared("DELETE FROM templates WHERE id_templates = ?", "i", [$id]);
+    audit_event('templates', 'DELETE', 'template', $id, 'Template deleted', null, null, array('id' => $id));
   }
 
-  header("location:../../media.php?module=".$module);
+  header("Location: /admin?module=".$module);
   exit;
 }
 
@@ -44,8 +46,10 @@ if ($module=='templates' AND $act=='input'){
     "sss",
     [$nama_templates, $pembuat, $folder]
   );
+  $newId = insert_id();
+  audit_event('templates', 'CREATE', 'template', $newId, 'Template created', null, null, array('judul' => $nama_templates, 'folder' => $folder));
 
-  header("location:../../media.php?module=".$module);
+  header("Location: /admin?module=".$module);
   exit;
 }
 
@@ -63,8 +67,9 @@ elseif ($module=='templates' AND $act=='update'){
     "sssi",
     [$nama_templates, $pembuat, $folder, $id]
   );
+  audit_event('templates', 'UPDATE', 'template', $id, 'Template updated', null, null, array('judul' => $nama_templates, 'folder' => $folder));
 
-  header("location:../../media.php?module=".$module);
+  header("Location: /admin?module=".$module);
   exit;
 }
 
@@ -77,9 +82,10 @@ elseif ($module=='templates' AND $act=='aktifkan'){
     exec_prepared("UPDATE templates SET aktif = 'Y' WHERE id_templates = ?", "i", [$id]);
     // de-activate others
     exec_prepared("UPDATE templates SET aktif = 'N' WHERE id_templates != ?", "i", [$id]);
+    audit_event('templates', 'UPDATE', 'template', $id, 'Template activated', null, null, array('aktif' => 'Y'));
   }
 
-  header("location:../../media.php?module=".$module);
+  header("Location: /admin?module=".$module);
   exit;
 }
 closedb();

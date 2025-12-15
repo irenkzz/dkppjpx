@@ -6,7 +6,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
 	require_once __DIR__ . "/../../includes/bootstrap.php";
-	$aksi = "modul/mod_fopim/aksi_fopim.php";
+	$aksi = "/adminweb/modul/mod_fopim/aksi_fopim.php";
 	$query = "SELECT id_identitas, fopim FROM identitas LIMIT 1";
     $hasil = querydb($query);
     $r     = $hasil->fetch_array();
@@ -56,7 +56,7 @@ else{
 						<div class="col-sm-9">
 							<input type="hidden" class="form-control" id="fupload_hapus" name="fupload_hapus" value="<?php echo $r['fopim']; ?>" />
 							<input type="file" class="form-control" id="fupload" name="fupload" required />
-							<small><strong>*) Silahkan download template file Photoshopnya <a href="../images/bupati-wakilbupati.psd" target="_blank">disini</a><strong></small>
+							<small><strong>*) Silahkan download template file Photoshopnya <a href="../images/foto_pimpinan.psd" target="_blank">disini</a><strong></small>
 						</div>
 					</div>
 				</div><!-- /.box-body -->

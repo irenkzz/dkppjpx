@@ -6,7 +6,10 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
 	require_once __DIR__ . "/../../includes/bootstrap.php";
-  	$aksi = "modul/mod_agenda/aksi_agenda.php";
+  	$aksi     = "/adminweb/modul/mod_agenda/aksi_agenda.php";
+    $isAdmin  = (($_SESSION['leveluser'] ?? '') === 'admin');
+    $username = $_SESSION['namauser'] ?? '';
+
   	function ubah_tgl2($tglnyo){
 		$fm=explode('-',$tglnyo);
 		$tahun=$fm[0];
@@ -16,6 +19,31 @@ else{
 		$sekarang=$tgll."/".$bulan."/".$tahun;
 		return $sekarang;
 	}
+
+    function revision_label_class_agenda($status) {
+      $s = strtoupper(trim((string)$status));
+      if ($s === 'APPROVED') return 'label-success';
+      if ($s === 'REJECTED') return 'label-danger';
+      if ($s === 'PENDING') return 'label-warning';
+      return 'label-default';
+    }
+
+    $myRevisions = array();
+    if (!$isAdmin) {
+      $revRes = querydb_prepared(
+        "SELECT rev_id, agenda_id, tema, status, created_at, approved_at, approved_by, note
+           FROM agenda_revisions
+          WHERE created_by = ?
+          ORDER BY rev_id DESC
+          LIMIT 20",
+        "s",
+        array($username)
+      );
+      while ($revRes && $row = $revRes->fetch_assoc()) {
+        $myRevisions[] = $row;
+      }
+    }
+
   // mengatasi variabel yang belum di definisikan (notice undefined index)
   $act = isset($_GET['act']) ? $_GET['act'] : '';  
 ?>
@@ -42,6 +70,7 @@ else{
                       <tr>
                         <th>No</th>
                         <th>Tema Acara</th>
+                        <th>Status</th>
                         <th>Tgl. Acara</th>
                         <th>Tgl. Posting</th>
                         <th>Aksi</th>
@@ -49,30 +78,42 @@ else{
                     </thead>
                     <tbody>
 					<?php
-					if ($_SESSION['leveluser']=='admin'){
-						$query  = "SELECT * FROM agenda ORDER BY id_agenda DESC";
+					if ($isAdmin){
+						$query  = "
+              SELECT a.*,
+                     (SELECT COUNT(*) FROM agenda_revisions ar WHERE ar.agenda_id = a.id_agenda AND ar.status = 'PENDING') AS pending_rev
+                FROM agenda a
+               ORDER BY a.id_agenda DESC";
 						$tampil = querydb($query);
 					}
 					else{
-						 $username = $_SESSION['namauser'];
 						 $tampil   = querydb_prepared(
-						 	"SELECT * FROM agenda WHERE username = ? ORDER BY id_agenda DESC",
+						 	"SELECT a.*,
+                    (SELECT COUNT(*) FROM agenda_revisions ar WHERE ar.agenda_id = a.id_agenda AND ar.status = 'PENDING') AS pending_rev
+               FROM agenda a
+              WHERE a.username = ?
+              ORDER BY a.id_agenda DESC",
 							 "s",
-						 	[$username]
+						 	array($username)
 						 );
 					}
 					$no=1;
-					while ($r=$tampil->fetch_array()){  
+					while ($tampil && ($r=$tampil->fetch_array())){  
 						$tgl_mulai   = tgl_indo($r['tgl_mulai']);
 						$tgl_selesai = tgl_indo($r['tgl_selesai']);
 						$tgl_posting = tgl_indo($r['tgl_posting']);
+            $pendingCount = isset($r['pending_rev']) ? (int)$r['pending_rev'] : 0;
+            $statusLabel  = '<span class="label label-success">Live</span>';
+            if ($isAdmin) {
+              $statusLabel .= ' <span class="badge '.($pendingCount > 0 ? 'bg-yellow' : 'bg-green').'">'.$pendingCount.' pending</span>';
+            }
 						echo "<tr><td>$no</td>
-							<td width=\"350\">$r[tema]</td>";
+							<td width=\"350\">".e($r['tema'])."</td>";
 						if ($tgl_mulai==$tgl_selesai){
-							echo "<td>$tgl_mulai</td>";
+							echo "<td>$statusLabel</td><td>$tgl_mulai</td>";
 						} 
 						else{
-							echo "<td>$tgl_mulai s/d $tgl_selesai</td>";
+							echo "<td>$statusLabel</td><td>$tgl_mulai s/d $tgl_selesai</td>";
 						}
 						echo "<td align=\"center\">$tgl_posting</td>
 								<td align=\"center\">
@@ -94,6 +135,36 @@ else{
                   </table>
                 </div><!-- /.box-body -->
               </div><!-- /.box -->
+
+          <?php if (!$isAdmin): ?>
+            <div class="box box-info">
+              <div class="box-header with-border">
+                <h3 class="box-title">Pengajuan Saya</h3>
+              </div>
+              <div class="box-body table-responsive no-padding">
+                <table class="table table-striped">
+                  <thead>
+                    <tr><th>ID Revisi</th><th>Tema</th><th>Status</th><th>Target</th><th>Catatan</th><th>Dibuat</th><th>Diproses</th></tr>
+                  </thead>
+                  <tbody>
+                    <?php if (empty($myRevisions)): ?>
+                      <tr><td colspan="7">Belum ada pengajuan revisi.</td></tr>
+                    <?php else: foreach ($myRevisions as $rev): ?>
+                      <tr>
+                        <td>#<?php echo (int)$rev['rev_id']; ?></td>
+                        <td><?php echo e($rev['tema']); ?></td>
+                        <td><span class="label <?php echo revision_label_class_agenda($rev['status']); ?>"><?php echo e($rev['status']); ?></span></td>
+                        <td><?php echo $rev['agenda_id'] ? 'Edit ID '.$rev['agenda_id'] : 'Agenda Baru'; ?></td>
+                        <td><?php echo e($rev['note'] ?? ''); ?></td>
+                        <td><?php echo e($rev['created_at'] ?? ''); ?></td>
+                        <td><?php echo e($rev['approved_at'] ?? '-'); ?><?php echo !empty($rev['approved_by']) ? ' oleh '.e($rev['approved_by']) : ''; ?></td>
+                      </tr>
+                    <?php endforeach; endif; ?>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          <?php endif; ?>
 <?php
 	break;
 	
@@ -106,6 +177,9 @@ else{
                 <form method="POST" action="<?php echo $aksi; ?>?module=agenda&act=input" class="form-horizontal" enctype="multipart/form-data">
 					<?php csrf_field(); ?>
 					<div class="box-body">
+            <div class="alert alert-info">
+              Agenda baru akan dikirim sebagai revisi dan menunggu persetujuan admin.
+            </div>
 						<div class="form-group">
 							<label for="tema" class="col-sm-2 control-label">Tema Acara</label>
 							<div class="col-sm-10">
@@ -149,13 +223,6 @@ else{
 								<input type="text" class="form-control" id="pengirim" name="pengirim" />
 							</div>
 						</div>
-						<!--<div class="form-group">
-							<label for="fupload" class="col-sm-2 control-label">Gambar</label>
-							<div class="col-sm-10">
-								<input type="file" class="form-control" id="fupload" name="fupload" />
-								<small>- Tipe gambar harus JPG (disarankan lebar gambar 600 px).</small>
-							</div>
-						</div>-->
 					</div><!-- /.box-body -->
 					<div class="box-footer">
 						<button type="submit" class="btn btn-primary">Simpan</button> <button type="button" onclick="self.history.back()" class="btn">Batal</button>
@@ -166,7 +233,7 @@ else{
 	break;
 	
 	case "editagenda":
-      if ($_SESSION['leveluser']=='admin'){
+      if ($isAdmin){
         $id_agenda = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 		$hasil     = querydb_prepared("SELECT * FROM agenda WHERE id_agenda = ?", "i", [$id_agenda]);
       }
@@ -179,7 +246,11 @@ else{
 		);
       }
 
-      $r = $hasil->fetch_array();
+      $r = $hasil ? $hasil->fetch_array() : null;
+      if (!$r) {
+        echo "<p>Data agenda tidak ditemukan atau akses ditolak.</p>";
+        break;
+      }
 	  $tgl_mulai   = ubah_tgl2($r['tgl_mulai']);
       $tgl_selesai = ubah_tgl2($r['tgl_selesai']);
 ?>
@@ -191,6 +262,9 @@ else{
 					<?php csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo $r['id_agenda']; ?>" />
 					<div class="box-body">
+            <div class="alert alert-info">
+              Perubahan akan dikirim sebagai revisi dan perlu disetujui admin sebelum menggantikan konten live.
+            </div>
 						<div class="form-group">
 							<label for="tema" class="col-sm-2 control-label">Tema Acara</label>
 							<div class="col-sm-10">
@@ -234,26 +308,6 @@ else{
 								<input type="text" class="form-control" id="pengirim" name="pengirim" value="<?php echo $r['pengirim']; ?>" />
 							</div>
 						</div>
-						<!--<div class="form-group">
-							<label for="fupload" class="col-sm-2 control-label">Gambar</label>
-							<div class="col-sm-10">
-								<?php
-								if ($r['gambar']!=''){
-									echo "<img src=\"../foto_banner/small_$r[gambar]\">";  
-								}
-								else{
-									echo "Belum ada gambarnya";
-								}
-								?>
-							</div>
-						</div>
-						<div class="form-group">
-							<label for="fupload" class="col-sm-2 control-label">Ganti Gambar</label>
-							<div class="col-sm-10">
-								<input type="file" class="form-control" id="fupload" name="fupload" />
-								<small>- Apabila gambar tidak diganti, dikosongkan saja.</small>
-							</div>
-						</div>-->
 					</div><!-- /.box-body -->
 					<div class="box-footer">
 						<button type="submit" class="btn btn-primary">Update</button> <button type="button" onclick="self.history.back()" class="btn">Batal</button>

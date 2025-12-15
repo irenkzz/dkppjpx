@@ -6,7 +6,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
     require_once __DIR__ . '/../../includes/bootstrap.php'; // path relatif dari modul
-    $aksi = "modul/mod_halamanstatis/aksi_halamanstatis.php";
+    $aksi = "/adminweb/modul/mod_halamanstatis/aksi_halamanstatis.php";
 
     // mengatasi variabel yang belum di definisikan (notice undefined index)
     $act  = $_GET['act'] ?? '';
@@ -137,7 +137,7 @@ else{
             // Sanitize and validate id
             $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
             if ($id <= 0) {
-                header("Location: ../../media.php?module=halamanstatis");
+                header("Location: /admin?module=halamanstatis");
                 exit;
             }
 
@@ -149,7 +149,7 @@ else{
             );
             $r = $hasil ? $hasil->fetch_array() : null;
             if (!$r) {
-                header("Location: ../../media.php?module=halamanstatis");
+                header("Location: /admin?module=halamanstatis");
                 exit;
             }
             ?>

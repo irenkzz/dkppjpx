@@ -6,6 +6,11 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+  if (!isset($_SESSION['leveluser']) || $_SESSION['leveluser'] !== 'admin') {
+    http_response_code(403);
+    exit('Forbidden');
+  }
+
   require_once __DIR__ . "/../../includes/bootstrap.php"; // provides require_post_csrf(), csrf_check(), e(), etc.
 
   opendb();
@@ -29,7 +34,7 @@ else{
     $stmt->execute();
     $stmt->close();
 
-    header("location:../../media.php?module=".$module);
+    header("Location: /admin?module=".$module);
     exit;
   }
 
@@ -50,7 +55,7 @@ else{
     $stmt->execute();
     $stmt->close();
 
-    header("location:../../media.php?module=".$module);
+    header("Location: /admin?module=".$module);
     exit;
   }
 
@@ -73,7 +78,7 @@ else{
     $stmt->execute();
     $stmt->close();
 
-    header("location:../../media.php?module=".$module);
+    header("Location: /admin?module=".$module);
     exit;
   }
 

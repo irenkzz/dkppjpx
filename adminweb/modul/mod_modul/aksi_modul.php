@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../includes/bootstrap.php'; // secure session + helpers
+require_once __DIR__ . '/../../inc/audit_log.php';
 opendb();
 
 // Apabila user belum login
@@ -35,8 +36,10 @@ if ($module=='modul' AND $act=='input'){
     "ssi",
     [$nama_modul, $link, $urutan]
   );
+  $newId = insert_id();
+  audit_event('modul', 'CREATE', 'modul', $newId, 'Modul created', null, null, array('nama' => $nama_modul, 'link' => $link, 'urutan' => $urutan));
 
-  header("location:../../media.php?module=".$module);
+  header("Location: /admin?module=".$module);
 }
 
 elseif ($module=='modul' AND $act=='update'){
@@ -54,8 +57,9 @@ exec_prepared(
   "ssissi",
   [$nama_modul, $link, $urutan, $status, $aktif, $id]
 );
+audit_event('modul', 'UPDATE', 'modul', $id, 'Modul updated', null, null, array('nama' => $nama_modul, 'status' => $status, 'aktif' => $aktif, 'urutan' => $urutan));
 
-header("location:../../media.php?module=".$module);
+header("Location: /admin?module=".$module);
 }
 
 closedb();

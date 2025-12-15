@@ -103,3 +103,11 @@ if (!function_exists('safe_url')) {
 // This mirrors your original include pathing to load $koneksi (mysqli).
 $root = dirname(dirname(__DIR__));           // .../adminweb -> project root
 require_once $root . '/config/koneksi.php';  // must define $koneksi (mysqli)
+
+// ---------- Auth guard ----------
+function require_admin_login(): void {
+    if (!isset($_SESSION['namauser'])) {
+        header('Location: /login');
+        exit;
+    }
+}

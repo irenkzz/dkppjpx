@@ -6,7 +6,12 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])) {
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else {
-    $aksi = "modul/mod_banner/aksi_banner.php";
+    if (!isset($_SESSION['leveluser']) || $_SESSION['leveluser'] !== 'admin') {
+        echo "<script>alert('Anda tidak memiliki izin untuk mengakses modul ini.'); window.location = '/admin';</script>";
+        exit;
+    }
+
+    $aksi = "/adminweb/modul/mod_banner/aksi_banner.php";
 
     // mengatasi variabel yang belum di definisikan (notice undefined index)
     $act = isset($_GET['act']) ? $_GET['act'] : '';
@@ -76,7 +81,7 @@ else {
             // Sanitize & validate id
             $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
             if ($id <= 0) {
-                header("Location: ../../media.php?module=banner");
+                header("Location: /admin?module=banner");
                 exit;
             }
 
@@ -88,7 +93,7 @@ else {
             );
             $r = $hasil->fetch_array();
             if (!$r) {
-                header("Location: ../../media.php?module=banner");
+                header("Location: /admin?module=banner");
                 exit;
             }
             ?>
@@ -121,7 +126,7 @@ else {
                                            id="link"
                                            name="link"
                                            value="<?php echo e($r['link'] ?? ''); ?>" />
-                                    <small>* Contoh : <b>http://www.lomboktimurkab.go.id</b></small>
+                                    <small>* Contoh : <b>https://jayapurakota.go.id/</b></small>
                                 </div>
                             </div>
                             <div class="form-group">

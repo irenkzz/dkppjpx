@@ -6,6 +6,11 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
+  if (!isset($_SESSION['leveluser']) || $_SESSION['leveluser'] !== 'admin') {
+    http_response_code(403);
+    exit('Forbidden');
+  }
+
   require_once __DIR__ . '/../../includes/upload_helpers.php';
   include "../../../config/library.php";
   opendb();
@@ -25,7 +30,7 @@ else{
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id <= 0) {
-        header("Location: ../../media.php?module=" . $module);
+        header("Location: /admin?module=" . $module);
         exit;
     }
 
@@ -49,7 +54,7 @@ else{
     $stmt->execute();
     $stmt->close();
 
-    header("Location: ../../media.php?module=" . $module);
+    header("Location: /admin?module=" . $module);
     exit;
   }
 
@@ -66,7 +71,7 @@ else{
         $stmt->bind_param("ss", $judul, $tgl_sekarang);
         $stmt->execute();
         $stmt->close();
-        header("Location: ../../media.php?module=".$module);
+        header("Location: /admin?module=".$module);
         exit;
     }
     
@@ -97,7 +102,7 @@ else{
     $stmt->execute();
     $stmt->close();
 
-    header("Location: ../../media.php?module=".$module);
+    header("Location: /admin?module=".$module);
     exit;
     }
   
@@ -112,7 +117,7 @@ else{
     $old_file    = $_POST['fupload_hapus'] ?? '';
 
     if ($id <= 0) {
-        header("Location: ../../media.php?module=".$module);
+        header("Location: /admin?module=".$module);
         exit;
     }
     
@@ -122,7 +127,7 @@ else{
         $stmt->bind_param("si", $judul, $id);
         $stmt->execute();
         $stmt->close();
-        header("Location: ../../media.php?module=".$module);
+        header("Location: /admin?module=".$module);
         exit;
     }
 
@@ -158,7 +163,7 @@ else{
     $stmt->execute();
     $stmt->close();
 
-    header("Location: ../../media.php?module=".$module);
+    header("Location: /admin?module=".$module);
     exit;
   }
  

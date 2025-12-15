@@ -31,7 +31,7 @@ else{
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     if ($id <= 0) {
-      header("location:../../media.php?module=".$module);
+      header("Location: /admin?module=".$module);
     exit;
     }
 
@@ -56,7 +56,7 @@ else{
     $stmt->execute();
     $stmt->close();
 
-    header("location:../../media.php?module=".$module);
+    header("Location: /admin?module=".$module);
 
     exit;
   }
@@ -81,7 +81,7 @@ else{
       $stmt->bind_param("ssss", $judul, $judul_seo, $tgl_sekarang, $isi_halaman);
       $stmt->execute();
       $stmt->close();
-      header("location:../../media.php?module=".$module);
+      header("Location: /admin?module=".$module);
       exit;
     }
     // Apabila ada gambar yang di upload
@@ -89,7 +89,7 @@ else{
      /*
       if ($tipe_file != "image/jpeg" AND $tipe_file != "image/pjpeg"){
         echo "<script>window.alert('Upload Gagal! Pastikan file yang di upload bertipe *.JPG');
-              window.location=('../../media.php?module=halamanstatis')</script>";
+              window.location=('/admin?module=halamanstatis')</script>";
       }
       else{
         //$folder = "../../../foto_banner/"; // folder untuk gambar halaman statis
@@ -123,7 +123,7 @@ else{
         $stmt->execute();
         $stmt->close();
 
-        header("location:../../media.php?module=".$module);
+        header("Location: /admin?module=".$module);
       }
 
   // Update halaman statis
@@ -150,7 +150,7 @@ else{
       $stmt->execute();
       $stmt->close();
       
-      header("location:../../media.php?module=".$module);
+      header("Location: /admin?module=".$module);
     }
     else{
       //Update dengan mengubah gambar
@@ -199,7 +199,7 @@ else{
             @unlink(__DIR__ . '/../../../foto_banner/' . $base);
             @unlink(__DIR__ . '/../../../foto_banner/small_' . $base);
         }
-        header("location:../../media.php?module=".$module);
+        header("Location: /admin?module=".$module);
      
     }
   }

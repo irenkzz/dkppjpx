@@ -10,6 +10,16 @@ else{
   require_once __DIR__ . "/../../../config/library.php";
   opendb();
 
+  function listslider_preset_link($key) {
+    $map = array(
+      'galeri'     => 'arsip-foto.html',
+      'pengumuman' => 'arsip-pengumuman.html',
+      'agenda'     => 'arsip-agenda.html',
+      'download'   => 'semua-download.html',
+    );
+    return isset($map[$key]) ? $map[$key] : '';
+  }
+
   $module = $_GET['module'] ?? '';
   $act    = $_GET['act'] ?? '';
 
@@ -21,7 +31,7 @@ else{
     if ($id > 0) {
       exec_prepared("DELETE FROM listslider WHERE id_list = ?", "i", [$id]);
     }
-    header("location:../../media.php?module=".$module);
+    header("Location: /admin?module=".$module);
     exit;
   }
 
@@ -32,6 +42,11 @@ else{
     $nama_menu  = $_POST['nama_menu'] ?? '';
     $keterangan = $_POST['keterangan'] ?? '';
     $link  	  = $_POST['link_menu'] ?? '';
+    $preset     = isset($_POST['preset_modul']) ? $_POST['preset_modul'] : '';
+    $presetLink = listslider_preset_link($preset);
+    if ($presetLink !== '') {
+      $link = $presetLink;
+    }
 
     exec_prepared(
       "INSERT INTO listslider (nama_menu, keterangan, link) VALUES (?, ?, ?)",
@@ -39,7 +54,7 @@ else{
       [$nama_menu, $keterangan, $link]
     );
 
-    header("location:../../media.php?module=".$module);
+    header("Location: /admin?module=".$module);
     exit;
   }
 
@@ -51,6 +66,11 @@ else{
     $nama_menu   = $_POST['nama_menu'] ?? '';
     $keterangan  = $_POST['keterangan'] ?? '';
     $link  	  = $_POST['link_menu'] ?? '';
+    $preset     = isset($_POST['preset_modul']) ? $_POST['preset_modul'] : '';
+    $presetLink = listslider_preset_link($preset);
+    if ($presetLink !== '') {
+      $link = $presetLink;
+    }
 
     if ($id > 0) {
       exec_prepared(
@@ -60,7 +80,7 @@ else{
       );
     }
 
-    header("location:../../media.php?module=".$module);
+    header("Location: /admin?module=".$module);
     exit;
   }
   closedb();

@@ -1,17 +1,12 @@
 <?php
-session_start();
-// Apabila user belum login
-if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
-	echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location = 'index.php'</script>";
-}
-// Apabila user sudah login dengan benar, maka terbentuklah session
-else{
-	include "../config/koneksi.php";
-	include "../config/fungsi_indotgl.php";
-	opendb();
-	include "header.php";
-	
-	include "menu.php";
+require_once __DIR__ . '/includes/bootstrap.php';
+require_admin_login();
+
+include "../config/fungsi_indotgl.php";
+opendb();
+include "header.php";
+
+include "menu.php";
 ?>
 
       <!-- =============================================== -->
@@ -24,5 +19,4 @@ else{
 <?php
 include "footer.php";
 closedb();
-}
 ?>

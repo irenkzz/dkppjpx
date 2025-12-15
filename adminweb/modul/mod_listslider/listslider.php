@@ -6,7 +6,13 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
 	require_once __DIR__ . "/../../includes/bootstrap.php";
-  $aksi = "modul/mod_listslider/aksi_listslider.php";
+  $aksi = "/adminweb/modul/mod_listslider/aksi_listslider.php";
+  $presetLinks = array(
+    'galeri'      => 'arsip-foto.html',
+    'pengumuman'  => 'arsip-pengumuman.html',
+    'agenda'      => 'arsip-agenda.html',
+    'download'    => 'semua-download.html',
+  );
   function ubah_tgl2($tglnyo){
 		$fm=explode('-',$tglnyo);
 		$tahun=$fm[0];
@@ -29,6 +35,7 @@ else{
 	<section class="content">
 		<div class="row">
 			<div class="col-xs-12">
+      <style>.readonly-modul{background:#f5f5f5;color:#777;}</style>
 <?php
 
   switch($act){
@@ -97,9 +104,20 @@ else{
 						<div class="form-group">
 							<label for="tema" class="col-sm-2 control-label">Nama Menu</label>
 							<div class="col-sm-10">
-								<input type="text" class="form-control" id="nama_menu" name="nama_menu" />
+								<input type="text" class="form-control" id="add_nama_menu" name="nama_menu" />
 							</div>
 						</div>
+            <div class="form-group">
+              <label class="col-sm-2 control-label">Preset Modul</label>
+              <div class="col-sm-10">
+                <select class="form-control" id="add_preset_modul" name="preset_modul">
+                  <option value="">Custom</option>
+                  <?php foreach ($presetLinks as $k => $v): ?>
+                    <option value="<?php echo $k; ?>"><?php echo ucfirst($k); ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+            </div>
 						<div class="form-group">
 							<label for="isi_agenda" class="col-sm-2 control-label">Keterangan</label>
 							<div class="col-sm-10">
@@ -109,8 +127,8 @@ else{
 						<div class="form-group">
 							<label for="tema" class="col-sm-2 control-label">Link Menu</label>
 							<div class="col-sm-10">
-								<input type="text" class="form-control" id="link_menu" name="link_menu" />
-								<small>Format URL Link harus seperti contoh (Menggunakan http): http://namadinas.lomboktimurkab.go.id</small>
+								<input type="text" class="form-control" id="add_link_menu" name="link_menu" />
+								<small>Format URL Link harus seperti contoh (Menggunakan http): https://jayapurakota.go.id/</small>
 							</div>
 						</div>
 					</div><!-- /.box-body -->
@@ -139,9 +157,20 @@ else{
 						<div class="form-group">
 							<label for="tema" class="col-sm-2 control-label">Nama Menu</label>
 							<div class="col-sm-10">
-								<input type="text" class="form-control" id="nama_menu" name="nama_menu" value="<?php echo $r['nama_menu']; ?>" />
+								<input type="text" class="form-control" id="edit_nama_menu" name="nama_menu" value="<?php echo $r['nama_menu']; ?>" />
 							</div>
 						</div>
+            <div class="form-group">
+              <label class="col-sm-2 control-label">Preset Modul</label>
+              <div class="col-sm-10">
+                <select class="form-control" id="edit_preset_modul" name="preset_modul">
+                  <option value="">Custom</option>
+                  <?php foreach ($presetLinks as $k => $v): ?>
+                    <option value="<?php echo $k; ?>" <?php echo (strcasecmp($r['link'], $v) === 0 ? 'selected' : ''); ?>><?php echo ucfirst($k); ?></option>
+                  <?php endforeach; ?>
+                </select>
+              </div>
+            </div>
 						<div class="form-group">
 							<label for="isi_agenda" class="col-sm-2 control-label">Keterangan</label>
 							<div class="col-sm-10">
@@ -151,8 +180,8 @@ else{
 						<div class="form-group">
 							<label for="tema" class="col-sm-2 control-label">Link Menu</label>
 							<div class="col-sm-10">
-								<input type="text" class="form-control" id="link_menu" name="link_menu" value="<?php echo $r['link']; ?>" />
-								<small>Format URL Link harus seperti contoh (Menggunakan http): http://namadinas.lomboktimurkab.go.id</small>
+								<input type="text" class="form-control" id="edit_link_menu" name="link_menu" value="<?php echo $r['link']; ?>" />
+								<small>Format URL Link harus seperti contoh (Menggunakan http): https://jayapurakota.go.id/</small>
 							</div>
 						</div>
 					</div><!-- /.box-body -->
@@ -160,11 +189,46 @@ else{
 						<button type="submit" class="btn btn-primary">Update</button> <button type="button" onclick="self.history.back()" class="btn">Batal</button>
 					</div><!-- /.box-footer -->
 				</form>
-              </div><!-- /.box -->
+            </div><!-- /.box -->
 <?php
 	break;
   }
 ?>
+<script type="text/javascript">
+(function() {
+  var presetLinks = <?php echo json_encode($presetLinks); ?>;
+  function applyPreset(prefix) {
+    var sel   = document.getElementById(prefix + '_preset_modul');
+    var link  = document.getElementById(prefix + '_link_menu');
+    var nama  = document.getElementById(prefix + '_nama_menu');
+    if (!sel || !link) return;
+    var key = sel.value || '';
+    if (key && presetLinks[key]) {
+      link.value = presetLinks[key];
+      link.readOnly = true; // lock typing
+      link.setAttribute('aria-disabled','true');
+      link.classList.add('disabled', 'readonly-modul');
+      if (nama && !nama.value) {
+        nama.value = sel.options[sel.selectedIndex].text;
+      }
+    } else {
+      link.readOnly = false;
+      link.removeAttribute('aria-disabled');
+      link.classList.remove('disabled', 'readonly-modul');
+      // kosongkan jika sebelumnya preset supaya user isi manual
+      var last = sel.getAttribute('data-last-preset');
+      if (last && presetLinks[last] && link.value === presetLinks[last]) {
+        link.value = '';
+      }
+    }
+    sel.setAttribute('data-last-preset', key);
+  }
+  var addSel = document.getElementById('add_preset_modul');
+  if (addSel) { addSel.onchange = function(){ applyPreset('add'); }; applyPreset('add'); }
+  var editSel = document.getElementById('edit_preset_modul');
+  if (editSel) { editSel.onchange = function(){ applyPreset('edit'); }; applyPreset('edit'); }
+})();
+</script>
             </div><!-- /.col -->
 		</div><!-- /.row -->
 	</section><!-- /.section -->

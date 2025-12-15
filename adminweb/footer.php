@@ -1,11 +1,6 @@
 <?php
-// Apabila user belum login
-if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
-	echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location = 'index.php'</script>"; 
-}
-// Apabila user sudah login dengan benar, maka terbentuklah session
-
-else{
+require_once __DIR__ . '/includes/bootstrap.php';
+require_admin_login();
 ?>
       <footer class="main-footer">
         <div class="pull-right hidden-xs">
@@ -28,129 +23,116 @@ else{
     </div><!-- ./wrapper -->
 	
     <!-- jQuery 2.1.4 -->
-    <script src="plugins/jQuery/jQuery-2.1.4.min.js"></script>
+    <script src="/adminweb/plugins/jQuery/jQuery-2.1.4.min.js"></script>
     <!-- Bootstrap 3.3.5 -->
-    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="/adminweb/bootstrap/js/bootstrap.min.js"></script>
     <!-- Select2 -->
-    <script src="plugins/select2/select2.full.min.js"></script>
+    <script src="/adminweb/plugins/select2/select2.full.min.js"></script>
     <!-- DataTables -->
-    <script src="plugins/datatables/jquery.dataTables.min.js"></script>
-    <script src="plugins/datatables/dataTables.bootstrap.min.js"></script>
+    <script src="/adminweb/plugins/datatables/jquery.dataTables.min.js"></script>
+    <script src="/adminweb/plugins/datatables/dataTables.bootstrap.min.js"></script>
     <!-- date-range-picker -->
-    <script src="plugins/moment/moment.js"></script>
-    <script src="plugins/daterangepicker/daterangepicker.js"></script>
+    <script src="/adminweb/plugins/moment/moment.js"></script>
+    <script src="/adminweb/plugins/daterangepicker/daterangepicker.js"></script>
     <!-- SlimScroll -->
-    <script src="plugins/slimScroll/jquery.slimscroll.min.js"></script>
+    <script src="/adminweb/plugins/slimScroll/jquery.slimscroll.min.js"></script>
     <!-- iCheck 1.0.1 -->
-    <script src="plugins/iCheck/icheck.min.js"></script>
+    <script src="/adminweb/plugins/iCheck/icheck.min.js"></script>
     <!-- FastClick -->
-    <script src="plugins/fastclick/fastclick.min.js"></script>
+    <script src="/adminweb/plugins/fastclick/fastclick.min.js"></script>
     <!-- ChartJS 1.0.1 -->
-    <script src="plugins/chartjs/Chart.min.js"></script>
+    <script src="/adminweb/plugins/chartjs/Chart.min.js"></script>
     <!-- AdminLTE App -->
-    <script src="dist/js/app.min.js"></script>
+    <script src="/adminweb/dist/js/app.min.js"></script>
+    <script src="/adminweb/dist/js/yn-toggle.js"></script>
 	<!-- CK Editor -->
-    <script src="plugins/ckeditor/ckeditor.js"></script>
-    <script src="dist/js/demo.js"></script>
+    <script src="/adminweb/plugins/ckeditor/ckeditor.js"></script>
+    <script src="/adminweb/dist/js/demo.js"></script>
+    <?php if (isset($_GET['module']) && $_GET['module'] === 'beranda'): ?>
+    <script>
+    (function(){
+      var payload = window.dashboardChart || null;
+      if (!payload) return;
+
+      function initChart() {
+        try {
+          if (!window.Chart) return;
+          var canvas = document.getElementById('visitorsChart');
+          if (!canvas) return;
+          var cap = 365;
+          var labels = Array.isArray(payload.labels) ? payload.labels.slice(0, cap) : [];
+          var visitors = Array.isArray(payload.visitors) ? payload.visitors.slice(0, cap) : [];
+          var hits = Array.isArray(payload.hits) ? payload.hits.slice(0, cap) : [];
+          var len = Math.min(labels.length, visitors.length, hits.length);
+          if (len <= 0) return;
+          labels = labels.slice(0, len);
+          visitors = visitors.slice(0, len);
+          hits = hits.slice(0, len);
+          var flat = visitors.concat(hits).map(function(v){ v = parseInt(v, 10); return isNaN(v) ? 0 : v; });
+          var maxVal = Math.max.apply(null, flat);
+          var useZeroScale = !isFinite(maxVal) || maxVal <= 0;
+          var chart = new Chart(canvas.getContext('2d'));
+          chart.Line({
+            labels: labels,
+            datasets: [
+              {
+                label: "Pengunjung",
+                fillColor: "rgba(60,141,188,0.8)",
+                strokeColor: "rgba(60,141,188,1)",
+                pointColor: "#3b8bba",
+                pointStrokeColor: "#fff",
+                pointHighlightFill: "#fff",
+                pointHighlightStroke: "rgba(60,141,188,1)",
+                data: visitors
+              },
+              {
+                label: "Hits",
+                fillColor: "rgba(0,166,90,0.4)",
+                strokeColor: "rgba(0,166,90,1)",
+                pointColor: "#00a65a",
+                pointStrokeColor: "#fff",
+                pointHighlightFill: "#fff",
+                pointHighlightStroke: "rgba(0,166,90,1)",
+                data: hits
+              }
+            ]
+          }, {
+            scaleOverride: useZeroScale,
+            scaleSteps: useZeroScale ? 1 : undefined,
+            scaleStepWidth: useZeroScale ? 1 : undefined,
+            scaleStartValue: useZeroScale ? 0 : undefined,
+            showScale: true,
+            scaleShowGridLines: true,
+            scaleGridLineColor: "rgba(0,0,0,.05)",
+            scaleGridLineWidth: 1,
+            scaleShowHorizontalLines: true,
+            scaleShowVerticalLines: true,
+            bezierCurve: false,
+            pointDot: true,
+            pointDotRadius: 4,
+            pointDotStrokeWidth: 1,
+            pointHitDetectionRadius: 10,
+            datasetStroke: true,
+            datasetStrokeWidth: 2,
+            datasetFill: true,
+            maintainAspectRatio: true,
+            responsive: true
+          });
+        } catch (err) {
+          if (window.console && console.warn) console.warn('Visitor chart skipped:', err);
+        }
+      }
+
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(initChart, 0);
+      } else {
+        document.addEventListener('DOMContentLoaded', initChart, false);
+      }
+    })();
+    </script>
+    <?php endif; ?>
     <!-- page script -->
 	<script>		
-	<?php
-	if($_GET['module']=='beranda') {
-	?>
-	  $(function () {
-  'use strict';
-
-  /* ChartJS
-   * -------
-   * Here we will create a few charts using ChartJS
-   */
-
-  //-----------------------
-  //- MONTHLY SALES CHART -
-  //-----------------------
-
-  // Get context with jQuery - using jQuery's .get() method.
-  var salesChartCanvas = $("#salesChart").get(0).getContext("2d");
-  // This will get the first returned node in the jQuery collection.
-  var salesChart = new Chart(salesChartCanvas);
-
-  var salesChartData = {
-    labels: [<?php echo $tanggal; ?>],
-    //labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
-    datasets: [
-      {
-        label: "Hits",
-        fillColor: "rgb(210, 214, 222)",
-        strokeColor: "rgb(210, 214, 222)",
-        pointColor: "rgb(210, 214, 222)",
-        pointStrokeColor: "#c1c7d1",
-        pointHighlightFill: "#fff",
-        pointHighlightStroke: "rgb(220,220,220)",
-        data: [<?php echo $hits; ?>]
-      },
-      {
-        label: "Pengunjung",
-        fillColor: "rgba(60,141,188,0.9)",
-        strokeColor: "rgba(60,141,188,0.8)",
-        pointColor: "#3b8bba",
-        pointStrokeColor: "rgba(60,141,188,1)",
-        pointHighlightFill: "#fff",
-        pointHighlightStroke: "rgba(60,141,188,1)",
-        data: [<?php echo $pengunjung; ?>]
-      }
-    ]
-  };
-
-  var salesChartOptions = {
-    //Boolean - If we should show the scale at all
-    showScale: true,
-    //Boolean - Whether grid lines are shown across the chart
-    scaleShowGridLines: false,
-    //String - Colour of the grid lines
-    scaleGridLineColor: "rgba(0,0,0,.05)",
-    //Number - Width of the grid lines
-    scaleGridLineWidth: 1,
-    //Boolean - Whether to show horizontal lines (except X axis)
-    scaleShowHorizontalLines: true,
-    //Boolean - Whether to show vertical lines (except Y axis)
-    scaleShowVerticalLines: true,
-    //Boolean - Whether the line is curved between points
-    bezierCurve: true,
-    //Number - Tension of the bezier curve between points
-    bezierCurveTension: 0.3,
-    //Boolean - Whether to show a dot for each point
-    pointDot: false,
-    //Number - Radius of each point dot in pixels
-    pointDotRadius: 4,
-    //Number - Pixel width of point dot stroke
-    pointDotStrokeWidth: 1,
-    //Number - amount extra to add to the radius to cater for hit detection outside the drawn point
-    pointHitDetectionRadius: 20,
-    //Boolean - Whether to show a stroke for datasets
-    datasetStroke: true,
-    //Number - Pixel width of dataset stroke
-    datasetStrokeWidth: 2,
-    //Boolean - Whether to fill the dataset with a color
-    datasetFill: true,
-    //String - A legend template
-    legendTemplate: "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<datasets.length; i++){%><li><span style=\"background-color:<%=datasets[i].lineColor%>\"></span><%=datasets[i].label%></li><%}%></ul>",
-    //Boolean - whether to maintain the starting aspect ratio or not when responsive, if set to false, will take up entire container
-    maintainAspectRatio: true,
-    //Boolean - whether to make the chart responsive to window resizing
-    responsive: true
-  };
-
-  //Create the line chart
-  salesChart.Line(salesChartData, salesChartOptions);
-
-  //---------------------------
-  //- END MONTHLY SALES CHART -
-  //---------------------------
-  });
-  <?php
-  }
-  ?>
-  
       $(function () {
         $("#datamodul").DataTable();
         $('#datauser').DataTable();
@@ -179,11 +161,12 @@ else{
           radioClass: 'iradio_minimal-blue'
         });
 		
-		CKEDITOR.replace('isi_<?php echo $_GET['module']; ?>');
+		var editorId = 'isi_<?php echo $_GET['module']; ?>';
+if (document.getElementById(editorId)) {
+    CKEDITOR.replace(editorId);
+}
+
       });
     </script>
   </body>
 </html>
-<?php
-}
-?>

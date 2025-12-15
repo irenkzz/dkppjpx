@@ -1,0 +1,25 @@
+-- Minimal audit log table for admin events
+CREATE TABLE IF NOT EXISTS `audit_log` (
+  `id_log` BIGINT NOT NULL AUTO_INCREMENT,
+  `created_at` DATETIME NOT NULL,
+  `username` VARCHAR(100) NULL,
+  `user_level` VARCHAR(50) NULL,
+  `module` VARCHAR(100) NULL,
+  `action` VARCHAR(30) NOT NULL,
+  `entity` VARCHAR(100) NULL,
+  `entity_id` VARCHAR(100) NULL,
+  `message` VARCHAR(255) NULL,
+  `ip_address` VARCHAR(45) NULL,
+  `user_agent` VARCHAR(255) NULL,
+  `url` VARCHAR(255) NULL,
+  `before_json` MEDIUMTEXT NULL,
+  `after_json` MEDIUMTEXT NULL,
+  `extra_json` MEDIUMTEXT NULL,
+  PRIMARY KEY (`id_log`),
+  KEY `idx_created_at` (`created_at`),
+  KEY `idx_username` (`username`),
+  KEY `idx_module` (`module`),
+  KEY `idx_action` (`action`),
+  KEY `idx_entity` (`entity`),
+  KEY `idx_entity_id` (`entity_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

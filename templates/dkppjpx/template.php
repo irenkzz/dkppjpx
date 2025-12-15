@@ -83,6 +83,27 @@ $template_style = e($tiden['wtemp'] ?? '');
 <html lang="en-US">
 
 <head>
+<?php if (defined('APP_ENV') && APP_ENV === 'development'): ?>
+	<style>
+	#dev-badge {
+		position: fixed;
+		top: 12px;
+		right: 12px;
+		background: #d32f2f;
+		color: #fff;
+		font-size: 12px;
+		font-weight: 700;
+		padding: 6px 10px;
+		border-radius: 6px;
+		z-index: 99999;
+		letter-spacing: 0.5px;
+		box-shadow: 0 2px 6px rgba(0,0,0,.35);
+		pointer-events: none; /* prevents blocking clicks */
+	}
+	</style>
+<?php endif; ?>
+
+
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="shortcut icon" href="<?php echo $favicon_safe; ?>" />
@@ -103,7 +124,11 @@ $template_style = e($tiden['wtemp'] ?? '');
 <meta property="og:image" content="<?= $image_safe ?>" />
 <meta property="og:image:width" content="300" />
 <meta property="og:image:height" content="225" />
-    <meta name="robots" content="noindex, nofollow">
+    <?php if (defined('APP_ENV') && APP_ENV === 'development'): ?>
+  		<meta name="robots" content="noindex, nofollow">
+	<?php else: ?>
+  		<meta name="robots" content="index, follow">
+	<?php endif; ?>
 
 <!-- Bootstrap core CSS -->
 <link href="<?php echo "$f[folder]/"; ?>assets_baru/css/bootstrap.min.css" rel="stylesheet">
@@ -135,6 +160,10 @@ $template_style = e($tiden['wtemp'] ?? '');
 </head>
 
 <body>
+<?php if (defined('APP_ENV') && APP_ENV === 'development'): ?>
+	<div id="dev-badge">DEV MODE</div>
+<?php endif; ?>
+
 <div class="container">
 	<div class="row">
 		

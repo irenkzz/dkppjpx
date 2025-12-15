@@ -5,7 +5,12 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-  $aksi = "modul/mod_download/aksi_download.php";
+  if (!isset($_SESSION['leveluser']) || $_SESSION['leveluser'] !== 'admin') {
+    echo "<script>alert('Anda tidak memiliki izin untuk mengakses modul ini.'); window.location = '/admin';</script>";
+    exit;
+  }
+
+  $aksi = "/adminweb/modul/mod_download/aksi_download.php";
   require_once __DIR__ . '/../../includes/bootstrap.php';
 
 

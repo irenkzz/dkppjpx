@@ -19,7 +19,7 @@ else{
       if ($id > 0) {
           exec_prepared("DELETE FROM sekilasinfo WHERE id_sekilas = ?", "i", [$id]);
       }
-      header("location:../../media.php?module=".$module);
+      header("Location: /admin?module=".$module);
       exit;
   }
 
@@ -34,7 +34,7 @@ else{
           [$info, $tgl_sekarang]
       );
 
-      header("location:../../media.php?module=".$module);
+      header("Location: /admin?module=".$module);
       exit;
   }
 
@@ -50,7 +50,7 @@ else{
           [$info, $id]
       );
 
-      header("location:../../media.php?module=".$module);
+      header("Location: /admin?module=".$module);
       exit;
   }
   closedb();

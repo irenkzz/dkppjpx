@@ -5,7 +5,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-  $aksi = "modul/mod_video/aksi_video.php";
+  $aksi = "/adminweb/modul/mod_video/aksi_video.php";
 
   // mengatasi variabel yang belum di definisikan (notice undefined index)
   $act = isset($_GET['act']) ? $_GET['act'] : '';  

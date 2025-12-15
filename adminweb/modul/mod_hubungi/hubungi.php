@@ -7,7 +7,7 @@ if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
 }
 // Apabila user sudah login dengan benar, maka terbentuklah session
 else{
-  $aksi = "modul/mod_hubungi/aksi_hubungi.php";
+  $aksi = "/adminweb/modul/mod_hubungi/aksi_hubungi.php";
 
   // mengatasi variabel yang belum di definisikan (notice undefined index)
   $act = isset($_GET['act']) ? $_GET['act'] : ''; 

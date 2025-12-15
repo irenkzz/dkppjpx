@@ -32,6 +32,32 @@ if (!function_exists('safe_url')) {
     }
 }
 
+function album_cover_public_url(?string $file): string
+{
+    $file = trim((string)$file);
+    $fallback = 'adminweb/dist/img/boxed-bg.jpg';
+    if ($file === '') {
+        return $fallback;
+    }
+
+    $root = dirname(__DIR__, 2);
+    $candidates = [
+        "img_album/small_$file",
+        "img_album/$file",
+        "img_galeri/small_$file",
+        "img_galeri/$file",
+    ];
+
+    foreach ($candidates as $rel) {
+        $abs = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rel);
+        if (is_file($abs)) {
+            return $rel;
+        }
+    }
+
+    return $fallback;
+}
+
 $ambiliden=querydb("SELECT * FROM identitas LIMIT 1");
 $tiden=$ambiliden->fetch_array();
 
@@ -753,11 +779,11 @@ if ($module=='home'){
 				$idalbum = (int)$tfab['id_album'];
 				$slug    = rawurlencode($tfab['album_seo'] ?? '');
 				$judul   = e($tfab['jdl_album']);
-				$gbr     = e($tfab['gbr_album']);
+				$coverSrc = album_cover_public_url($tfab['gbr_album'] ?? '');
 			?>
 			<div class="col-md-3 col-sm-6 col-xs-12 margin-bottom-15">
 				<div class="content-box box-img no-margin text-center featured-news box-clickable">
-					<img class="img-responsive" src="img_album/small_<?php echo $gbr; ?>" alt="<?php echo $judul; ?>" width="100%" style="height:230px;">
+					<img class="img-responsive" src="<?php echo e($coverSrc); ?>" alt="<?php echo $judul; ?>" width="100%" style="height:230px;">
 					<div class="ua-square-logo overlap-top text-center">
 						<center>
 							<div class="overlay-custom" style="max-width: 150px;margin-top:30px;">
@@ -1198,7 +1224,7 @@ elseif ($module=='halamanstatis'){
 							<div class="col-xs-12">
 								<ol class="breadcrumb">
 									<li><a href="./">Beranda</a></li>
-									<li><a href="#">Berita</a></li>
+									<li class="active"><?php echo $judul; ?></li>
 								</ol>
 							</div> <!-- .col-md-12 -->
 						</div> <!-- .row -->
@@ -1916,7 +1942,7 @@ elseif ($module=='semuaalbum'){
 					$albumId    = (int)($w['id_album'] ?? 0);
 					$albumSlug  = rawurlencode($w['album_seo'] ?? '');
 					$judulAlbum = e($w['jdl_album'] ?? '');
-					$coverAlbum = e($w['gbr_album'] ?? '');
+					$coverSrc   = album_cover_public_url($w['gbr_album'] ?? '');
 					$jumlahFoto = (int)($w['jumlah'] ?? 0);
 				?>				
 				<div class="col-md-12 col-sm-12 col-xs-12 masonry-grid-item no-padding">
@@ -1924,10 +1950,10 @@ elseif ($module=='semuaalbum'){
 					<article class="content-box box-img bg-light box-clickable media">
 						<div class="box-body media">
 							<div class="media-left visible-xs no-padding margin-bottom-10">
-								<img class="img-responsive media-object borderthumb" src="img_album/small_<?php echo $coverAlbum; ?>" alt="<?php echo $judulAlbum; ?>" style="width: 100%;height: auto; ">
+								<img class="img-responsive media-object borderthumb" src="<?php echo e($coverSrc); ?>" alt="<?php echo $judulAlbum; ?>" style="width: 100%;height: auto; ">
 							</div>
 							<div style="float:left; margin-right: 10px;" class="media-left hidden-xs">
-								<img class="media-object borderthumb" src="img_album/small_<?php echo $coverAlbum; ?>" alt="<?php echo $judulAlbum; ?>" width="190" height="120">
+								<img class="media-object borderthumb" src="<?php echo e($coverSrc); ?>" alt="<?php echo $judulAlbum; ?>" width="190" height="120">
 							</div>
 							<div class="media-body">
 							<h3>

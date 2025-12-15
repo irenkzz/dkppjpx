@@ -20,7 +20,7 @@ else{
     require_post_csrf();
 
     $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-    if ($id <= 0) { header("location:../../media.php?module=".$module); exit; }
+    if ($id <= 0) { header("Location: /admin?module=".$module); exit; }
 
     // fetch filename (prepared)
     $stmt = $dbconnection->prepare("SELECT gambar FROM video WHERE id_video = ?");
@@ -43,7 +43,7 @@ else{
       @unlink(__DIR__ . "/../../../foto_video/small_$base");
     }
 
-    header("location:../../media.php?module=".$module);
+    header("Location: /admin?module=".$module);
   }
 
 
@@ -67,7 +67,7 @@ else{
       $stmt->bind_param("ssss", $judul_video, $video_seo, $yt_code, $deskripsi);
       $stmt->execute();
       $stmt->close();
-      header("location:../../media.php?module=".$module);
+      header("Location: /admin?module=".$module);
     } else {
       try {
         $res = upload_image_secure($_FILES['fupload'], [
@@ -79,7 +79,7 @@ else{
         ]);
         $nama_gambar = $res['filename'];
       } catch (Throwable $e) {
-        echo "<script>window.alert('Upload Gagal: " . e($e->getMessage()) . "'); window.location='../../media.php?module=video';</script>";
+        echo "<script>window.alert('Upload Gagal: " . e($e->getMessage()) . "'); window.location='/admin?module=video';</script>";
         exit;
       }
 
@@ -87,7 +87,7 @@ else{
       $stmt->bind_param("sssss", $judul_video, $video_seo, $yt_code, $deskripsi, $nama_gambar);
       $stmt->execute();
       $stmt->close();
-      header("location:../../media.php?module=".$module);
+      header("Location: /admin?module=".$module);
     }
   }
 
@@ -112,7 +112,7 @@ else{
       $stmt->bind_param("ssssi", $judul_video, $video_seo, $yt_code, $deskripsi, $id);
       $stmt->execute();
       $stmt->close();
-      header("location:../../media.php?module=".$module);
+      header("Location: /admin?module=".$module);
     } else {
       try {
         $res = upload_image_secure($_FILES['fupload'], [
@@ -124,7 +124,7 @@ else{
         ]);
         $nama_gambar = $res['filename'];
       } catch (Throwable $e) {
-        echo "<script>window.alert('Upload Gagal: " . e($e->getMessage()) . "'); window.location='../../media.php?module=video';</script>";
+        echo "<script>window.alert('Upload Gagal: " . e($e->getMessage()) . "'); window.location='/admin?module=video';</script>";
         exit;
       }
 
@@ -150,7 +150,7 @@ else{
         @unlink(__DIR__ . "/../../../foto_video/small_$base");
       }
 
-      header("location:../../media.php?module=".$module);
+      header("Location: /admin?module=".$module);
     }
   }
 

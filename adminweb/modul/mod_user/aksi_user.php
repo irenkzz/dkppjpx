@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . "/../../includes/bootstrap.php"; // secure session, CSRF + DB helpers
+require_once __DIR__ . "/../../inc/audit_log.php";
 opendb();
 
 // Apabila user belum login
@@ -68,7 +69,8 @@ else{
         $stmt->execute();
         $stmt->close();
 
-        echo "<script>alert('User baru berhasil ditambahkan.');window.location='../../media.php?module=user';</script>";
+        audit_event('users', 'CREATE', 'user', $username, 'User created', null, null, array('username' => $username, 'level' => 'admin'));
+        echo "<script>alert('User baru berhasil ditambahkan.');window.location='/admin?module=user';</script>";
     } else {
         echo "<script>alert('Gagal menambahkan user (prepare error).');history.back();</script>";
     }
@@ -101,6 +103,7 @@ else{
 
     $is_admin   = (($_SESSION['leveluser'] ?? '') === 'admin');
     $username_s = $_SESSION['namauser'] ?? '';
+    $targetUsername = '';
 
     // Tentukan row user yang boleh diubah
     if ($is_admin) {
@@ -114,6 +117,17 @@ else{
 
         // Admin boleh mengubah status blokir, clamp ke Y/N
         $blokir = ($blokir_post === 'Y') ? 'Y' : 'N';
+        $stmtUser = $dbconnection->prepare("SELECT username FROM users WHERE id_session = ? LIMIT 1");
+        if ($stmtUser) {
+            $stmtUser->bind_param("s", $id);
+            $stmtUser->execute();
+            $resUser = $stmtUser->get_result();
+            $rowUser = $resUser ? $resUser->fetch_assoc() : null;
+            $stmtUser->close();
+            if ($rowUser && isset($rowUser['username'])) {
+                $targetUsername = $rowUser['username'];
+            }
+        }
     } else {
         // Operator: abaikan ID dari POST, pakai username session
         if ($username_s === '') {
@@ -138,6 +152,7 @@ else{
 
         $id     = $row['id_session']; // paksa hanya milik sendiri
         $blokir = $row['blokir'];     // operator tidak bisa mengubah blokir
+        $targetUsername = $username_s;
     }
 
     // Apakah password diubah?
@@ -167,7 +182,8 @@ else{
       $stmt->close();
     }
 
-    header("location:../../media.php?module=".$module);
+    audit_event('users', 'UPDATE', 'user', $targetUsername !== '' ? $targetUsername : $id, 'User updated', null, null, array('target' => $targetUsername, 'by' => $username_s));
+    header("Location: /admin?module=".$module);
     exit;
   }
 

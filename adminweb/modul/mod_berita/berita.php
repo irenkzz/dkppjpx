@@ -20,7 +20,33 @@ else{
     return $str;
   }
 
-  $aksi = "modul/mod_berita/aksi_berita.php";
+  function revision_label_class($status) {
+    $s = strtoupper(trim((string)$status));
+    if ($s === 'APPROVED') return 'label-success';
+    if ($s === 'REJECTED') return 'label-danger';
+    if ($s === 'PENDING') return 'label-warning';
+    return 'label-default';
+  }
+
+  $aksi      = "/adminweb/modul/mod_berita/aksi_berita.php";
+  $isAdmin   = (($_SESSION['leveluser'] ?? '') === 'admin');
+  $usernameS = $_SESSION['namauser'] ?? '';
+
+  $myRevisions = array();
+  if (!$isAdmin) {
+    $revRes = querydb_prepared(
+      "SELECT rev_id, berita_id, judul, status, created_at, approved_at, approved_by, note
+         FROM berita_revisions
+        WHERE created_by = ?
+        ORDER BY rev_id DESC
+        LIMIT 20",
+      "s",
+      array($usernameS)
+    );
+    while ($revRes && $row = $revRes->fetch_assoc()) {
+      $myRevisions[] = $row;
+    }
+  }
 
   // mengatasi variabel yang belum di definisikan (notice undefined index)
   $act = isset($_GET['act']) ? $_GET['act'] : '';  
@@ -40,6 +66,26 @@ else{
   switch($act){
     // Tampil Berita
     default:
+		// daftar berita live + hitung revisi pending
+		if ($isAdmin){
+			$sqlLive = "
+        SELECT b.*, k.nama_kategori,
+               (SELECT COUNT(*) FROM berita_revisions br WHERE br.berita_id = b.id_berita AND br.status = 'PENDING') AS pending_rev
+          FROM berita b
+          JOIN kategori k ON b.id_kategori = k.id_kategori
+         ORDER BY b.id_berita DESC";
+			$tampil = querydb($sqlLive);
+		}
+		else{
+			$sqlLive = "
+        SELECT b.*, k.nama_kategori,
+               (SELECT COUNT(*) FROM berita_revisions br WHERE br.berita_id = b.id_berita AND br.status = 'PENDING') AS pending_rev
+          FROM berita b
+          JOIN kategori k ON b.id_kategori = k.id_kategori
+         WHERE b.username = ?
+         ORDER BY b.id_berita DESC";
+			$tampil = querydb_prepared($sqlLive, "s", array($usernameS));
+		}
 ?>
               <div class="box">
                 <div class="box-body">
@@ -49,27 +95,26 @@ else{
                         <th>No</th>
                         <th>Judul</th>
                         <th>Kategori</th>
+                        <th>Status</th>
                         <th>Tgl. Posting</th>
                         <th>Aksi</th>
                       </tr>
                     </thead>
                     <tbody>
 					<?php
-					if ($_SESSION['leveluser']=='admin'){
-						$query  = "SELECT * FROM berita,kategori WHERE berita.id_kategori=kategori.id_kategori ORDER BY id_berita DESC";
-						$tampil = querydb($query);
-					}
-					else{
-						$query  = "SELECT * FROM berita,kategori WHERE berita.id_kategori=kategori.id_kategori AND username='$_SESSION[namauser]' ORDER BY id_berita DESC";
-						$tampil = querydb($query);
-					}
 					$no=1;
-					while ($r=$tampil->fetch_array()){  
+					while ($tampil && ($r=$tampil->fetch_array())){  
 						$tgl_posting=tgl_indo($r['tanggal']);
+            $pendingCount = isset($r['pending_rev']) ? (int)$r['pending_rev'] : 0;
+            $statusLabel  = '<span class="label label-success">Live</span>';
+            if ($isAdmin) {
+              $statusLabel .= ' <span class="badge '.($pendingCount > 0 ? 'bg-yellow' : 'bg-green').'">'.($pendingCount).' pending</span>';
+            }
 						echo '<tr>
 								<td>'.$no.'</td>
-								<td width="350">'.$r['judul'].'</td>
-								<td>'.$r['nama_kategori'].'</td>
+								<td width="350">'.e($r['judul']).'</td>
+								<td>'.e($r['nama_kategori']).'</td>
+                <td>'.$statusLabel.'</td>
 								<td>'.$tgl_posting.'</td>
 								<td align="center">
 									<a href="?module=berita&act=editberita&id='.$r['id_berita'].'" title="Edit Berita">
@@ -91,6 +136,36 @@ else{
                   </table>
                 </div><!-- /.box-body -->
               </div><!-- /.box -->
+
+          <?php if (!$isAdmin): ?>
+            <div class="box box-info">
+              <div class="box-header with-border">
+                <h3 class="box-title">Pengajuan Saya</h3>
+              </div>
+              <div class="box-body table-responsive no-padding">
+                <table class="table table-striped">
+                  <thead>
+                    <tr><th>ID Revisi</th><th>Judul</th><th>Status</th><th>Target</th><th>Catatan</th><th>Dibuat</th><th>Diproses</th></tr>
+                  </thead>
+                  <tbody>
+                    <?php if (empty($myRevisions)): ?>
+                      <tr><td colspan="7">Belum ada pengajuan revisi.</td></tr>
+                    <?php else: foreach ($myRevisions as $rev): ?>
+                      <tr>
+                        <td>#<?php echo (int)$rev['rev_id']; ?></td>
+                        <td><?php echo e($rev['judul']); ?></td>
+                        <td><span class="label <?php echo revision_label_class($rev['status']); ?>"><?php echo e($rev['status']); ?></span></td>
+                        <td><?php echo $rev['berita_id'] ? 'Edit ID '.$rev['berita_id'] : 'Berita Baru'; ?></td>
+                        <td><?php echo e($rev['note'] ?? ''); ?></td>
+                        <td><?php echo e($rev['created_at'] ?? ''); ?></td>
+                        <td><?php echo e($rev['approved_at'] ?? '-'); ?><?php echo !empty($rev['approved_by']) ? ' oleh '.e($rev['approved_by']) : ''; ?></td>
+                      </tr>
+                    <?php endforeach; endif; ?>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          <?php endif; ?>
 <?php
 	break;
 	
@@ -102,7 +177,10 @@ else{
                 </div><!-- /.box-header -->
                 <form method="POST" action="<?php echo $aksi; ?>?module=berita&act=input" class="form-horizontal" enctype="multipart/form-data">
 					<?php csrf_field(); ?>
-					<div class="box-body">
+          <div class="box-body">
+            <div class="alert alert-info">
+              Pengajuan baru akan masuk antrean persetujuan admin sebelum tampil di situs.
+            </div>
 						<div class="form-group">
 							<label for="judul" class="col-sm-2 control-label">Judul</label>
 							<div class="col-sm-10">
@@ -165,7 +243,7 @@ else{
 			break;
 		}
 
-		if ($_SESSION['leveluser'] == 'admin') {
+		if ($isAdmin) {
 			// admin boleh edit semua berita
 			$stmt = $dbconnection->prepare("SELECT * FROM berita WHERE id_berita = ?");
 			$stmt->bind_param("i", $id);
@@ -194,6 +272,9 @@ else{
 					<?php csrf_field(); ?>
 					<input type="hidden" name="id" value="<?php echo $r['id_berita']; ?>" />
 					<div class="box-body">
+            <div class="alert alert-info">
+              Perubahan akan masuk antrean revisi dan harus disetujui admin sebelum menggantikan konten live.
+            </div>
 						<div class="form-group">
 							<label for="judul" class="col-sm-2 control-label">Judul</label>
 							<div class="col-sm-10">

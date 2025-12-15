@@ -29,7 +29,7 @@ $lokasi_file    = $_FILES['fupload']['tmp_name'] ?? '';
 $file_dir = __DIR__ . '/../../../images';
 
 if ($id <= 0 || empty($lokasi_file)){
-        header('location:../../media.php?module='.$module.'&r=gagal');
+        header('Location: /admin?module='.$module.'&r=gagal');
         closedb();
         exit;
 }
@@ -58,8 +58,8 @@ else{
     $update = exec_prepared("UPDATE identitas SET fopim = ? WHERE id_identitas = ?", "si", [$nama_file, $id]);
 }
 if($update) 
-	header('location:../../media.php?module='.$module.'&r=sukses');
+	header('Location: /admin?module='.$module.'&r=sukses');
 else 
-	header('location:../../media.php?module='.$module.'&r=gagal');
+	header('Location: /admin?module='.$module.'&r=gagal');
 closedb();
 ?>

@@ -1,107 +1,235 @@
 <?php
 require_once __DIR__ . '/includes/bootstrap.php';
+require_admin_login();
 
-// Apabila user belum login
-if (empty($_SESSION['namauser']) AND empty($_SESSION['passuser'])){
-	echo "<script>alert('Untuk mengakses modul, Anda harus login dulu.'); window.location = 'index.php'</script>"; 
+// Helpers keep sidebar state logic centralized and suppress undefined index notices.
+function is_admin()
+{
+    return isset($_SESSION['leveluser']) && $_SESSION['leveluser'] === 'admin';
 }
-// Apabila user sudah login dengan benar, maka terbentuklah session
 
-else{
-	$module=$_GET['module'];
+function normalize_menu_module($module)
+{
+    $module = strtolower(trim((string) $module));
+    $aliases = array(
+        'beranda'       => 'beranda',
+        'identitas'     => 'identitas',
+        'logo'          => 'logo',
+        'fopim'         => 'fopim',
+        'user'          => 'user',
+        'menu'          => 'menu',
+        'listslider'    => 'listslider',
+        'slider'        => 'slider',
+        'auditlog'      => 'auditlog',
+        'modul'         => 'modul',
+        'berita'        => 'berita',
+        'kategori'      => 'kategori',
+        'tag'           => 'tag',
+        'halamanstatis' => 'halamanstatis',
+        'album'         => 'album',
+        'galerifoto'    => 'galerifoto',
+        'sekilasinfo'   => 'sekilasinfo',
+        'download'      => 'download',
+        'agenda'        => 'agenda',
+        'pengumuman'    => 'pengumuman',
+        'polling'       => 'polling',
+        'hubungi'       => 'hubungi',
+        'banner'        => 'banner',
+    );
+
+    return isset($aliases[$module]) ? $aliases[$module] : $module;
+}
+
+function menu_is_active($current, $keys)
+{
+    $current = normalize_menu_module($current);
+
+    foreach ((array) $keys as $key) {
+        if ($current === normalize_menu_module($key)) {
+            return 'active';
+        }
+    }
+
+    return '';
+}
+
+function menu_item_visible(array $item)
+{
+    return empty($item['admin_only']) || is_admin();
+}
+
+$currentModule = normalize_menu_module(isset($_GET['module']) ? $_GET['module'] : '');
+$fullName = isset($_SESSION['namalengkap']) ? $_SESSION['namalengkap'] : '';
+
+// Declarative menu definition keeps markup stable while reducing inline conditionals.
+$MENU = array(
+    array('type' => 'header', 'label' => 'MENU'),
+    array(
+        'type'   => 'link',
+        'module' => 'beranda',
+        'icon'   => 'fa fa-dashboard',
+        'label'  => 'Beranda',
+        'href'   => '?module=beranda',
+        'title'  => 'beranda',
+    ),
+    array(
+        'type'        => 'tree',
+        'label'       => 'Menu Utama',
+        'icon'        => 'fa fa-gear',
+        'active_keys' => array('identitas', 'modul', 'user', 'slider', 'menu', 'logo', 'fopim', 'listslider', 'auditlog'),
+        'items'       => array(
+            array('module' => 'identitas', 'label' => 'Identitas Web', 'href' => '?module=identitas', 'admin_only' => true),
+            array('module' => 'logo', 'label' => 'Logo Header', 'href' => '?module=logo', 'admin_only' => true),
+            array('module' => 'fopim', 'label' => 'Foto Pimpinan', 'href' => '?module=fopim', 'admin_only' => true),
+            array('module' => 'user', 'label' => 'Manajemen User', 'href' => '?module=user'),
+            array('module' => 'menu', 'label' => 'Manajemen Menu', 'href' => '?module=menu', 'admin_only' => true),
+            array('module' => 'listslider', 'label' => 'List Slider', 'href' => '?module=listslider', 'admin_only' => true),
+            array('module' => 'slider', 'label' => 'Slider Beranda', 'href' => '?module=slider', 'admin_only' => true),
+            array('module' => 'auditlog', 'label' => 'Audit Log', 'href' => '?module=auditlog', 'admin_only' => true),
+        ),
+    ),
+    array(
+        'type'        => 'tree',
+        'label'       => 'Modul Berita',
+        'icon'        => 'fa fa-edit',
+        'active_keys' => array('berita', 'kategori', 'tag'),
+        'items'       => array(
+            array('module' => 'berita', 'label' => 'Berita', 'href' => '?module=berita'),
+            array('module' => 'kategori', 'label' => 'Kategori', 'href' => '?module=kategori'),
+            array('module' => 'tag', 'label' => 'Tag', 'href' => '?module=tag'),
+        ),
+    ),
+    array(
+        'type'       => 'link',
+        'module'     => 'halamanstatis',
+        'icon'       => 'fa fa-tag',
+        'label'      => 'Halaman Statis',
+        'href'       => '?module=halamanstatis',
+        'title'      => 'Halaman Statis',
+        'admin_only' => true,
+    ),
+    array(
+        'type'        => 'tree',
+        'label'       => 'Media',
+        'icon'        => 'fa fa-edit',
+        'active_keys' => array('album', 'galerifoto', 'sekilasinfo'),
+        'items'       => array(
+            array('module' => 'album', 'label' => 'Album Photo', 'href' => '?module=album'),
+            array('module' => 'galerifoto', 'label' => 'Galeri Photo', 'href' => '?module=galerifoto'),
+            array('module' => 'sekilasinfo', 'label' => 'Sekilas Info', 'href' => '?module=sekilasinfo', 'admin_only' => true),
+        ),
+    ),
+    array(
+        'type'   => 'link',
+        'module' => 'download',
+        'icon'   => 'fa fa-download',
+        'label'  => 'Download',
+        'href'   => '?module=download',
+        'title'  => 'Download',
+        'admin_only' => true,
+    ),
+    array(
+        'type'        => 'tree',
+        'label'       => 'Interaksi',
+        'icon'        => 'fa fa-edit',
+        'active_keys' => array('agenda', 'pengumuman', 'polling', 'hubungi'),
+        'items'       => array(
+            array('module' => 'agenda', 'label' => 'Agenda', 'href' => '?module=agenda'),
+            array('module' => 'pengumuman', 'label' => 'Pengumuman', 'href' => '?module=pengumuman'),
+            array('module' => 'polling', 'label' => 'Polling', 'href' => '?module=polling', 'admin_only' => true),
+            array('module' => 'hubungi', 'label' => 'Hubungi Kami', 'href' => '?module=hubungi'),
+        ),
+    ),
+    array(
+        'type'   => 'link',
+        'module' => 'banner',
+        'icon'   => 'fa fa-tag',
+        'label'  => 'Banner',
+        'href'   => '?module=banner',
+        'title'  => 'Banner',
+        'admin_only' => true,
+    ),
+    array(
+        'type'  => 'link',
+        'module'=> null,
+        'icon'  => 'fa fa-sign-out',
+        'label' => 'Keluar',
+        'href'  => '/adminweb/logout.php',
+        'title' => 'Keluar',
+    ),
+);
 ?>
 <!-- Left side column. contains the sidebar -->
 <aside class="main-sidebar">
     <!-- sidebar: style can be found in sidebar.less -->
     <section class="sidebar">
-	<div class="user-panel">
-			<div class="pull-left image">
-				<img src="dist/img/user.png" class="img-responsive">
-			</div>
-			<div class="pull-left info">
-  			<p><?php echo e($_SESSION['namalengkap'] ?? ''); ?></p>
-  			<a href="#"><i class="fa fa-circle text-success"></i> Online</a>
-			</div>
-		  </div>
-		<!-- sidebar menu: : style can be found in sidebar.less -->
+        <div class="user-panel">
+            <div class="pull-left image">
+                <img src="/adminweb/dist/img/user.png" class="img-responsive">
+            </div>
+            <div class="pull-left info">
+                <p><?php echo e($fullName); ?></p>
+                <a href="#"><i class="fa fa-circle text-success"></i> Online</a>
+            </div>
+        </div>
+        <!-- sidebar menu: : style can be found in sidebar.less -->
         <ul class="sidebar-menu">
-			<li class="header">MENU</li>
-            <li class="<?php if($module=="beranda") echo "active"; ?>"><a href="?module=beranda" title="beranda"><i class="fa fa-dashboard"></i> <span>Beranda</span></a></li>
-            <li class="treeview <?php if($module=="identitas" || $module=="modul" || $module=="user" || $module=="slider" || $module=="menu" || $module=="logo" || $module=="fopim" || $module=="listslider") echo "active"; ?>">
-				<a href="#">
-					<i class="fa fa-gear"></i>
-					<span><b>Menu Utama</b></span>
-					<i class="fa fa-angle-left pull-right"></i>
-				</a>
-				<ul class="treeview-menu">
-					<?php
-					if($_SESSION['leveluser']=="admin"){
-					?>
-					<li class="<?php if($module=="identitas") echo "active"; ?>"><a href="?module=identitas"><i class="fa fa-circle-o"></i> <span>Identitas Web</span></a></li>
-					<li class="<?php if($module=="logo") echo "active"; ?>"><a href="?module=logo"><i class="fa fa-circle-o"></i> <span>Logo Header</span></a></li>
-					<li class="<?php if($module=="fopim") echo "active"; ?>"><a href="?module=fopim"><i class="fa fa-circle-o"></i> <span>Foto Pimpinan</span></a></li>
-					<li class="<?php if($module=="user") echo "active"; ?>"><a href="?module=user"><i class="fa fa-circle-o"></i> <span>Manajemen User</span></a></li>
-					<li class="<?php if($module=="menu") echo "active"; ?>"><a href="?module=menu"><i class="fa fa-circle-o"></i> <span>Manajemen Menu</span></a></li>
-					<li class="<?php if($module=="listslider") echo "active"; ?>"><a href="?module=listslider"><i class="fa fa-circle-o"></i> <span>List Slider</span></a></li>
-					<li class="<?php if($module=="slider") echo "active"; ?>"><a href="?module=slider"><i class="fa fa-circle-o"></i> <span>Slider Beranda</span></a></li>
-					<?php }
-					else{
-					?>
-					<li class="<?php if($module=="user") echo "active"; ?>"><a href="?module=user"><i class="fa fa-circle-o"></i> <span>Manajemen User</span></a></li>
-					<?php	
-					}
-					?>
-				</ul>
-			</li>			
-            <li class="treeview <?php if($module=="berita" || $module=="kategori" || $module=="tag") echo "active"; ?>">
-				<a href="#">
-					<i class="fa fa-edit"></i>
-					<span><b>Modul Berita</b></span>
-					<i class="fa fa-angle-left pull-right"></i>
-				</a>
-				<ul class="treeview-menu">
-					<li class="<?php if($module=="berita") echo "active"; ?>"><a href="?module=berita"><i class="fa fa-circle-o"></i> <span>Berita</span></a></li>
-					<li class="<?php if($module=="kategori") echo "active"; ?>"><a href="?module=kategori"><i class="fa fa-circle-o"></i> <span>Kategori</span></a></li>
-					<li class="<?php if($module=="kategori") echo "active"; ?>"><a href="?module=tag"><i class="fa fa-circle-o"></i> <span>Tag</span></a></li>
-				</ul>
-			</li>
-			<?php
-			if($_SESSION['leveluser']=="admin"){
-			?>
-			<li class="<?php if($module=="halamanstatis") echo "active"; ?>"><a href="?module=halamanstatis" title="Halaman Statis"><i class="fa fa-tag"></i> <span>Halaman Statis</span></a></li>
-			<?php } ?>
-			<li class="treeview <?php if($module=="album" || $module=="galerifoto" || $module=="sekilasinfo") echo "active"; ?>">
-				<a href="#">
-					<i class="fa fa-edit"></i>
-					<span><b>Media</b></span>
-					<i class="fa fa-angle-left pull-right"></i>
-				</a>
-				<ul class="treeview-menu">
-					<li class="<?php if($module=="album") echo "active"; ?>"><a href="?module=album"><i class="fa fa-circle-o"></i> <span>Album Photo</span></a></li>
-					<li class="<?php if($module=="galerifoto") echo "active"; ?>"><a href="?module=galerifoto"><i class="fa fa-circle-o"></i> <span>Galeri Photo</span></a></li>
-					<li class="<?php if($module=="sekilasinfo") echo "active"; ?>"><a href="?module=sekilasinfo"><i class="fa fa-circle-o"></i> <span>Sekilas Info</span></a></li>
-				</ul>
-			</li>
-			<li class="<?php if($module=="download") echo "active"; ?>"><a href="?module=download" title="Download"><i class="fa fa-download"></i> <span>Download</span></a></li>
-            <li class="treeview <?php if($module=="agenda" || $module=="pengumuman" || $module=="polling" || $module=="hubungi") echo "active"; ?>">
-				<a href="#">
-					<i class="fa fa-edit"></i>
-					<span><b>Interaksi</b></span>
-					<i class="fa fa-angle-left pull-right"></i>
-				</a>
-				<ul class="treeview-menu">
-					<li class="<?php if($module=="agenda") echo "active"; ?>"><a href="?module=agenda"><i class="fa fa-circle-o"></i> <span>Agenda</span></a></li>
-					<li class="<?php if($module=="pengumuman") echo "active"; ?>"><a href="?module=pengumuman"><i class="fa fa-circle-o"></i> <span>Pengumuman</span></a></li>
-					<li class="<?php if($module=="polling") echo "active"; ?>"><a href="?module=polling"><i class="fa fa-circle-o"></i> <span>Polling</span></a></li>
-					<li class="<?php if($module=="hubungi") echo "active"; ?>"><a href="?module=hubungi"><i class="fa fa-circle-o"></i> <span>Hubungi Kami</span></a></li>
-				</ul>
-			</li>
-			<li class="<?php if($module=="banner") echo "active"; ?>"><a href="?module=banner" title="Banner"><i class="fa fa-tag"></i> <span>Banner</span></a></li>
-			<li><a href="logout.php" title="Keluar"><i class="fa fa-sign-out"></i> <span>Keluar</span></a></li>
+<?php foreach ($MENU as $section): ?>
+<?php
+    if ($section['type'] === 'header') {
+        ?>
+            <li class="header"><?php echo $section['label']; ?></li>
+<?php
+        continue;
+    }
+
+    if ($section['type'] === 'link') {
+        if (!menu_item_visible($section)) {
+            continue;
+        }
+
+        $activeClass = '';
+        if (isset($section['module']) && $section['module'] !== '' && $section['module'] !== null) {
+            $activeClass = menu_is_active($currentModule, $section['module']);
+        }
+        ?>
+            <li<?php echo $activeClass ? ' class="' . $activeClass . '"' : ''; ?>><a href="<?php echo $section['href']; ?>" title="<?php echo $section['title']; ?>"><i class="<?php echo $section['icon']; ?>"></i> <span><?php echo $section['label']; ?></span></a></li>
+<?php
+        continue;
+    }
+
+    if ($section['type'] === 'tree') {
+        $visibleChildren = array();
+        foreach ($section['items'] as $child) {
+            if (menu_item_visible($child)) {
+                $visibleChildren[] = $child;
+            }
+        }
+
+        if (count($visibleChildren) === 0) {
+            continue;
+        }
+
+        $treeActive = menu_is_active($currentModule, $section['active_keys']);
+        ?>
+            <li class="treeview<?php echo $treeActive ? ' ' . $treeActive : ''; ?>">
+                <a href="#">
+                    <i class="<?php echo $section['icon']; ?>"></i>
+                    <span><b><?php echo $section['label']; ?></b></span>
+                    <i class="fa fa-angle-left pull-right"></i>
+                </a>
+                <ul class="treeview-menu">
+<?php foreach ($visibleChildren as $child): ?>
+<?php $childActive = menu_is_active($currentModule, $child['module']); ?>
+                    <li<?php echo $childActive ? ' class="' . $childActive . '"' : ''; ?>><a href="<?php echo $child['href']; ?>"><i class="fa fa-circle-o"></i> <span><?php echo $child['label']; ?></span></a></li>
+<?php endforeach; ?>
+                </ul>
+            </li>
+<?php
+    }
+?>
+<?php endforeach; ?>
         </ul>
     </section>
     <!-- /.sidebar -->
 </aside>
-<?php
-}
-?>
